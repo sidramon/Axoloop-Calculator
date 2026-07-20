@@ -166,120 +166,120 @@ public class ScalarFunctionTests
         act.Should().Throw<InvalidOperationException>();
     }
 
-    // ---- Deriv ----
+    // ---- Ndiff ----
 
     private static FunctionValue Square() => new(
         "f", 1, "f(x)", args => new NumberValue(Math.Pow(((NumberValue)args[0]).Number, 2)));
 
     [Fact]
-    public void Deriv_SquareFunctionAtThree_ReturnsSix()
+    public void Ndiff_SquareFunctionAtThree_ReturnsSix()
     {
-        var result = (NumberValue)new DerivFunction().Apply(new Value[] { Square(), new NumberValue(3) });
+        var result = (NumberValue)new NdiffFunction().Apply(new Value[] { Square(), new NumberValue(3) });
 
         result.Number.Should().BeApproximately(6, 1e-4);
     }
 
     [Fact]
-    public void Deriv_FirstArgumentNotAFunction_Throws()
+    public void Ndiff_FirstArgumentNotAFunction_Throws()
     {
-        var act = () => new DerivFunction().Apply(new Value[] { new NumberValue(1), new NumberValue(3) });
+        var act = () => new NdiffFunction().Apply(new Value[] { new NumberValue(1), new NumberValue(3) });
 
         act.Should().Throw<InvalidOperationException>();
     }
 
     [Fact]
-    public void Deriv_FunctionWithWrongArity_Throws()
+    public void Ndiff_FunctionWithWrongArity_Throws()
     {
         var twoArg = new FunctionValue("g", 2, "g(a, b)", args => args[0]);
 
-        var act = () => new DerivFunction().Apply(new Value[] { twoArg, new NumberValue(3) });
+        var act = () => new NdiffFunction().Apply(new Value[] { twoArg, new NumberValue(3) });
 
         act.Should().Throw<InvalidOperationException>();
     }
 
-    // ---- Derivative (arity 1, returns a FunctionValue) ----
+    // ---- NdiffCallable (arity 1, returns a FunctionValue) ----
 
     [Fact]
-    public void Derivative_OfSquare_ReturnsFunctionValueOfArityOne()
+    public void NdiffCallable_OfSquare_ReturnsFunctionValueOfArityOne()
     {
-        var result = new DerivativeFunction().Apply(new Value[] { Square() });
+        var result = new NdiffCallableFunction().Apply(new Value[] { Square() });
 
         result.Should().BeOfType<FunctionValue>();
         ((FunctionValue)result).Arity.Should().Be(1);
     }
 
     [Fact]
-    public void Derivative_InvokedAtThree_EquivalentToDerivAtThree()
+    public void NdiffCallable_InvokedAtThree_EquivalentToNdiffAtThree()
     {
-        var derivative = (FunctionValue)new DerivativeFunction().Apply(new Value[] { Square() });
+        var derivative = (FunctionValue)new NdiffCallableFunction().Apply(new Value[] { Square() });
         var viaInvoke = ((NumberValue)derivative.Invoke(new Value[] { new NumberValue(3) })).Number;
-        var viaDeriv = ((NumberValue)new DerivFunction().Apply(new Value[] { Square(), new NumberValue(3) })).Number;
+        var viaNdiff = ((NumberValue)new NdiffFunction().Apply(new Value[] { Square(), new NumberValue(3) })).Number;
 
-        viaInvoke.Should().BeApproximately(viaDeriv, 1e-9);
+        viaInvoke.Should().BeApproximately(viaNdiff, 1e-9);
     }
 
     [Fact]
-    public void Derivative_FirstArgumentNotAFunction_Throws()
+    public void NdiffCallable_FirstArgumentNotAFunction_Throws()
     {
-        var act = () => new DerivativeFunction().Apply(new Value[] { new NumberValue(1) });
+        var act = () => new NdiffCallableFunction().Apply(new Value[] { new NumberValue(1) });
 
         act.Should().Throw<InvalidOperationException>();
     }
 
-    // ---- NthDerivative (arity 3) ----
+    // ---- NthNdiff (arity 3) ----
 
     private static FunctionValue Cube() => new(
         "f", 1, "f(x)", args => new NumberValue(Math.Pow(((NumberValue)args[0]).Number, 3)));
 
     [Fact]
-    public void NthDerivative_SecondDerivativeOfCubeAtTwo_ReturnsTwelve()
+    public void NthNdiff_SecondDerivativeOfCubeAtTwo_ReturnsTwelve()
     {
-        var result = (NumberValue)new NthDerivativeFunction().Apply(
+        var result = (NumberValue)new NthNdiffFunction().Apply(
             new Value[] { Cube(), new NumberValue(2), new NumberValue(2) });
 
         result.Number.Should().BeApproximately(12, 1e-5);
     }
 
     [Fact]
-    public void NthDerivative_ThirdDerivativeOfCube_ReturnsSix()
+    public void NthNdiff_ThirdDerivativeOfCube_ReturnsSix()
     {
-        var result = (NumberValue)new NthDerivativeFunction().Apply(
+        var result = (NumberValue)new NthNdiffFunction().Apply(
             new Value[] { Cube(), new NumberValue(3), new NumberValue(2) });
 
         result.Number.Should().BeApproximately(6, 1e-4);
     }
 
     [Fact]
-    public void NthDerivative_OrderFive_Throws()
+    public void NthNdiff_OrderFive_Throws()
     {
-        var act = () => new NthDerivativeFunction().Apply(
+        var act = () => new NthNdiffFunction().Apply(
             new Value[] { Square(), new NumberValue(5), new NumberValue(1) });
 
         act.Should().Throw<InvalidOperationException>();
     }
 
     [Fact]
-    public void NthDerivative_NonIntegerOrder_Throws()
+    public void NthNdiff_NonIntegerOrder_Throws()
     {
-        var act = () => new NthDerivativeFunction().Apply(
+        var act = () => new NthNdiffFunction().Apply(
             new Value[] { Square(), new NumberValue(2.5), new NumberValue(1) });
 
         act.Should().Throw<InvalidOperationException>();
     }
 
     [Fact]
-    public void NthDerivative_NegativeOrder_Throws()
+    public void NthNdiff_NegativeOrder_Throws()
     {
-        var act = () => new NthDerivativeFunction().Apply(
+        var act = () => new NthNdiffFunction().Apply(
             new Value[] { Square(), new NumberValue(-1), new NumberValue(1) });
 
         act.Should().Throw<InvalidOperationException>();
     }
 
     [Fact]
-    public void NthDerivative_FirstArgumentNotAFunction_Throws()
+    public void NthNdiff_FirstArgumentNotAFunction_Throws()
     {
-        var act = () => new NthDerivativeFunction().Apply(
+        var act = () => new NthNdiffFunction().Apply(
             new Value[] { new NumberValue(1), new NumberValue(2), new NumberValue(1) });
 
         act.Should().Throw<InvalidOperationException>();

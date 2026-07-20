@@ -16,7 +16,7 @@ public static class EvaluatorFactory
     public static Evaluator CreateDefault() => CreateDefault(new FunctionContext());
 
     public static Evaluator CreateDefault(FunctionContext functionContext) =>
-        new(Builtins(), SpecialForms(), functionContext);
+        new(Builtins(), SpecialForms(functionContext), functionContext);
 
     public static IReadOnlyList<IFunction> Builtins() => new IFunction[]
     {
@@ -57,19 +57,25 @@ public static class EvaluatorFactory
         new LinSolveGeneralFunction(),
         new RrefFunction(),
         new NullSpaceFunction(),
-        new DerivFunction(),
-        new DerivativeFunction(),
-        new NthDerivativeFunction(),
+        new NdiffFunction(),
+        new NdiffCallableFunction(),
+        new NthNdiffFunction(),
         new IntegralFunction(),
         new AntiderivativeFunction(),
         new AntiderivativeFunction(hasExplicitBasePoint: true),
         new PlotFunction(),
     };
 
-    public static IReadOnlyList<ISpecialForm> SpecialForms() => new ISpecialForm[]
+    public static IReadOnlyList<ISpecialForm> SpecialForms(FunctionContext? functionContext = null)
     {
-        new IfForm(),
-        new SolveForm(),
-        new SolveForm(hasExplicitDomain: true),
-    };
+        var functions = functionContext ?? new FunctionContext();
+        return new ISpecialForm[]
+        {
+            new IfForm(),
+            new SolveForm(),
+            new SolveForm(hasExplicitDomain: true),
+            new DiffForm(functions),
+            new DiffForm(functions, hasExplicitOrder: true),
+        };
+    }
 }

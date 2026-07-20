@@ -33,7 +33,7 @@ public static class HelpPanel
         table.AddRow("[green]1 + 1[/]",          "Evaluate an expression");
         table.AddRow("[green]a := [[1,2;3,4]][/]", "Assign a matrix to a variable");
         table.AddRow("[green]a * 2[/]",           "Use a variable in an expression");
-        table.AddRow("[green]/plot deriv(f) -10 10[/]", "<expr> can be any function-valued expression, not just a name");
+        table.AddRow("[green]/plot ndiff(f) -10 10[/]", "<expr> can be any function-valued expression, not just a name");
 
         var panel = new Panel(table)
         {

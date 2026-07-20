@@ -6,7 +6,7 @@ using System.Numerics;
 /// An exact rational number: numerator and denominator as arbitrary-precision integers,
 /// always reduced (GCD-divided) at construction, with the sign carried on the numerator
 /// and the denominator always positive and non-zero. Exact arithmetic is the whole point
-/// of the symbolic layer — deriv(x/3) must give 1/3, not the double 0.3333333333333333.
+/// of the symbolic layer — diff(x/3, x) must give 1/3, not the double 0.3333333333333333.
 /// </summary>
 public readonly struct Rational : IEquatable<Rational>, IComparable<Rational>
 {

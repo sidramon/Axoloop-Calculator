@@ -28,10 +28,10 @@ x = 2
 Axoloop> f(x) := x^2
 f(x) defined
 
-Axoloop> deriv(f)(3)
+Axoloop> ndiff(f)(3)
 6
 
-Axoloop> /plotweb deriv(f) -10 10
+Axoloop> /plotweb ndiff(f) -10 10
 ```
 
 ## Features
@@ -46,7 +46,7 @@ Variables persist across the session; mathematical constants are write-protected
 **User-defined functions** — `y(x) := 2*x + 5`, including recursion with `if`.
 Functions are first-class values: a bare name like `y` evaluates to a callable,
 so it can be passed to another function, returned from one, or called again
-immediately — `deriv(y)(3)` chains a second call directly onto the result of
+immediately — `ndiff(y)(3)` chains a second call directly onto the result of
 the first.
 
 **Linear algebra** — determinant, inverse, rank, trace, transpose, dot and cross
@@ -60,16 +60,16 @@ cases — a unique solution, no solution, or infinitely many, returned as a
 particular solution plus a null-space basis; `rref` and `nullspace` expose the
 underlying steps directly.
 
-**Calculus** — `deriv(f, x)` for the first derivative, `deriv(f, n, x)` for the
-nth via higher-order finite-difference stencils, and `integral(f, a, b)` for a
-definite integral by Simpson's rule. `deriv(f)`, `integral(f)` and
+**Calculus** — `ndiff(f, x)` for the numerical first derivative, `ndiff(f, n, x)`
+for the nth via higher-order finite-difference stencils, and `integral(f, a, b)`
+for a definite integral by Simpson's rule. `ndiff(f)`, `integral(f)` and
 `integral(f, a)` return a derivative or antiderivative as a callable function
 rather than a single value, so it can be composed or plotted directly.
 
 **Plotting** — ASCII rendering in the terminal, or an interactive HTML view with
 zoom, pan, point inspection, and detected zeros and local extrema. `/plot`,
 `/plotweb`, `/zeros` and `/extrema` accept any function-valued expression, not
-just a defined name — `/plotweb deriv(f) -10 10` plots a derivative directly.
+just a defined name — `/plotweb ndiff(f) -10 10` plots a derivative directly.
 `plot(f, xMin, xMax)` returns raw samples as a matrix instead of rendering.
 
 **Built-in documentation** — every function carries its own signature, description
@@ -138,16 +138,17 @@ are at call time. That suits a REPL, but it is a defensible thing to disagree wi
 
 ## Known limits
 
-Everything is numeric — there is no symbolic layer, so no algebraic
-differentiation or factoring; `solve`, `deriv` and `integral` all work by
-approximation rather than exact manipulation. `solve` scans a fixed domain
-(`[-100, 100]` by default) for sign changes, so a periodic equation reports at
-most the first 10 of its roots even when infinitely many exist, and a root
-outside the scanned domain is simply not found. Derivatives lose precision
-quickly past first order — expect noticeably fewer correct digits at
-`deriv(f, 2, x)` than at `deriv(f, x)`, and worse still at order 3 or 4 — because
-higher-order finite-difference stencils amplify rounding error, which is also
-why orders above 4 are rejected outright. `integral(f)` and `integral(f, a)`
+`diff` is the only exact, symbolic operation so far — everything else is
+numeric, so no factoring or algebraic equation solving; `solve` and `integral`
+both work by approximation rather than exact manipulation. `solve` scans a
+fixed domain (`[-100, 100]` by default) for sign changes, so a periodic
+equation reports at most the first 10 of its roots even when infinitely many
+exist, and a root outside the scanned domain is simply not found. `ndiff`'s
+approximate derivatives lose precision quickly past first order — expect
+noticeably fewer correct digits at `ndiff(f, 2, x)` than at `ndiff(f, x)`, and
+worse still at order 3 or 4 — because higher-order finite-difference stencils
+amplify rounding error, which is also why orders above 4 are rejected outright.
+`integral(f)` and `integral(f, a)`
 return a callable antiderivative that reruns a full quadrature on every
 invocation, so sampling it at many points (e.g. for a plot) is proportionally
 expensive. No complex numbers, so `eigvals` refuses matrices with complex
@@ -166,8 +167,9 @@ A few things that would be genuinely useful:
 
 - **Complex numbers** — the largest missing piece, and the one that unblocks
   several others, including `eigvecs` on non-symmetric matrices
-- **Symbolic layer** — algebraic differentiation, factoring, and exact equation
-  solving; `solve`, `deriv` and `integral` are numeric-only today
+- **Wider symbolic layer** — `diff` covers exact differentiation; factoring and
+  exact equation solving are still open, and `solve`/`integral` remain
+  numeric-only
 - **Numerical limits** — an `EquationSolver` (Newton-Raphson with a bisection
   fallback) already exists in `Domain/Calculator/Algorithms`, built originally
   for the since-removed `fsolve`; it has no caller today but is a reasonable

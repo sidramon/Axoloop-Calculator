@@ -164,14 +164,14 @@ public class PlotFunctionUseCaseTests
     [Fact]
     public void Sample_DerivativeOfCubicFunction_MatchesAnalyticDerivativeAtEveryPoint()
     {
-        // Verifies the case that motivates deriv(f) returning a FunctionValue at all:
+        // Verifies the case that motivates ndiff(f) returning a FunctionValue at all:
         // plotting a derivative without a name registered in FunctionContext.
         var (evaluator, functions, globals) = CreateHarness();
         DefineFunction(functions, "f", "x", new BinaryExpression(
             new IdentifierExpression("x"), new PowerOperator(), new NumberExpression(new NumberValue(3))));
         var f = Resolve(evaluator, globals, "f");
 
-        var derivative = (FunctionValue)new DerivativeFunction().Apply(new Value[] { f });
+        var derivative = (FunctionValue)new NdiffCallableFunction().Apply(new Value[] { f });
 
         var series = UseCase.Sample(derivative, -3, 3, new PlotSampleRequest(SampleCount: 25));
 

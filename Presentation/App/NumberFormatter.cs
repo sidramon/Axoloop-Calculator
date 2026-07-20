@@ -1,6 +1,7 @@
 namespace Presentation.App;
 
 using System.Globalization;
+using Domain.Calculator.Symbolic;
 using Domain.Calculator.Values;
 
 public sealed class NumberFormatter
@@ -21,6 +22,7 @@ public sealed class NumberFormatter
         FunctionDefinedValue f => $"{f.Name}({string.Join(", ", f.Parameters)}) defined",
         FunctionValue fn => fn.Signature,
         SolutionValue s => FormatSolutionInline(s),
+        SymbolicValue s => SymbolicPrinter.Print(s.Expression),
         _ => value.ToString() ?? ""
     };
 

@@ -48,6 +48,7 @@ internal static class ValueArithmetic
         MatrixValue    => "matrix",
         FunctionValue  => "function",
         SolutionValue  => "solution",
+        SymbolicValue  => "symbolic",
         _ => "value"
     };
 }

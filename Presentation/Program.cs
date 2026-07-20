@@ -77,20 +77,24 @@ var functions = new IFunction[]
     new LinSolveGeneralFunction(),
     new RrefFunction(),
     new NullSpaceFunction(),
-    new DerivFunction(),
-    new DerivativeFunction(),
-    new NthDerivativeFunction(),
+    new NdiffFunction(),
+    new NdiffCallableFunction(),
+    new NthNdiffFunction(),
     new IntegralFunction(),
     new AntiderivativeFunction(),
     new AntiderivativeFunction(hasExplicitBasePoint: true),
     new PlotFunction(),
 };
 
+var functionContext = new FunctionContext();
+
 var specialForms = new ISpecialForm[]
 {
     new IfForm(),
     new SolveForm(),
     new SolveForm(hasExplicitDomain: true),
+    new DiffForm(functionContext),
+    new DiffForm(functionContext, hasExplicitOrder: true),
 };
 
 var postfixOperators = new IUnaryOperator[]
@@ -102,8 +106,6 @@ var prefixOperators = new IUnaryOperator[]
 {
     new NegateOperator(),
 };
-
-var functionContext = new FunctionContext();
 
 var parser        = new Parser(operators, postfixOperators, prefixOperators, new Tokenizer());
 var evaluator     = new Evaluator(functions, specialForms, functionContext);
