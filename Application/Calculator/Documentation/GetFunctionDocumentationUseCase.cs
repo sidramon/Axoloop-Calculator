@@ -9,8 +9,13 @@ public sealed class GetFunctionDocumentationUseCase
 
     public GetFunctionDocumentationUseCase(IEnumerable<IFunction> functions, IEnumerable<ISpecialForm> specialForms)
     {
+        // A special form may be registered more than once under the same name to support
+        // multiple arities (e.g. solve/2 and solve/4) — collapse those back into a single
+        // documentation entry rather than listing the same name twice.
         _all = functions.Select(FunctionDoc.From)
             .Concat(specialForms.Select(FunctionDoc.From))
+            .GroupBy(f => f.Name, StringComparer.OrdinalIgnoreCase)
+            .Select(g => g.First())
             .ToList();
     }
 

@@ -35,4 +35,24 @@ public class FunctionDocumentationCompletenessTests
                 $"'{specialForm.Name}' must have at least one example");
         }
     }
+
+    [Fact]
+    public void RemovedFSolveFunction_LeavesNoTraceInAnyRegisteredDocumentation()
+    {
+        // fsolve was removed as a duplicate of solve(equation, unknown[, xMin, xMax]).
+        // /functions, /help, and the generated web page all render from exactly these two
+        // registries (mirroring Program.cs), so checking here covers all of them.
+        foreach (var function in EvaluatorFactory.Builtins())
+        {
+            function.Name.Should().NotBe("fsolve");
+            function.Signature.Should().NotContainEquivalentOf("fsolve");
+            function.Description.Should().NotContainEquivalentOf("fsolve");
+            function.Examples.Should().OnlyContain(example => !example.ToLowerInvariant().Contains("fsolve"));
+        }
+
+        foreach (var specialForm in EvaluatorFactory.SpecialForms())
+        {
+            specialForm.Description.Should().NotContainEquivalentOf("fsolve");
+        }
+    }
 }

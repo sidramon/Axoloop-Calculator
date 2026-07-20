@@ -8,6 +8,9 @@ using Domain.Calculator.Operations.Functions.Scalar;
 using Domain.Calculator.Operations.Functions.Scalar.Trigonometric;
 using Domain.Calculator.Operations.SpecialForms;
 
+// Kept intentionally in sync with the `functions` array wired up in Presentation/Program.cs —
+// the documentation completeness guard only ever inspects the builtins listed here.
+
 public static class EvaluatorFactory
 {
     public static Evaluator CreateDefault() => CreateDefault(new FunctionContext());
@@ -50,10 +53,16 @@ public static class EvaluatorFactory
         new EigenvaluesFunction(),
         new EigenvectorsFunction(),
         new IsSymmetricFunction(),
+        new LinSolveFunction(),
+        new LinSolveGeneralFunction(),
+        new RrefFunction(),
+        new NullSpaceFunction(),
     };
 
     public static IReadOnlyList<ISpecialForm> SpecialForms() => new ISpecialForm[]
     {
         new IfForm(),
+        new SolveForm(),
+        new SolveForm(hasExplicitDomain: true),
     };
 }

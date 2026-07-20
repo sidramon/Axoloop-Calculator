@@ -4,7 +4,11 @@ using Domain.Calculator.Values;
 
 public static class RowEchelon
 {
-    public static (double[,] Reduced, int Rank) Reduce(MatrixValue matrix)
+    public static (double[,] Reduced, int Rank) Reduce(MatrixValue matrix) => ReduceCore(matrix, normalizePivots: false);
+
+    public static (double[,] Reduced, int Rank) ReduceFully(MatrixValue matrix) => ReduceCore(matrix, normalizePivots: true);
+
+    private static (double[,] Reduced, int Rank) ReduceCore(MatrixValue matrix, bool normalizePivots)
     {
         var rows = matrix.Rows;
         var cols = matrix.Columns;
@@ -21,10 +25,16 @@ public static class RowEchelon
 
             MatrixArrays.SwapRows(m, pivot, rank, cols);
 
+            if (normalizePivots)
+            {
+                var pivotValue = m[rank, col];
+                for (var c = col; c < cols; c++) m[rank, c] /= pivotValue;
+            }
+
             for (var r = 0; r < rows; r++)
             {
                 if (r == rank) continue;
-                var factor = m[r, col] / m[rank, col];
+                var factor = normalizePivots ? m[r, col] : m[r, col] / m[rank, col];
                 for (var c = col; c < cols; c++)
                     m[r, c] -= factor * m[rank, c];
             }

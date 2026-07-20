@@ -86,4 +86,34 @@ public class CalculatorCompletionHandlerTests
 
         suggestions.Should().BeEmpty();
     }
+
+    [Fact]
+    public void GetSuggestions_SpecialFormPrefix_ReturnsSpecialFormName()
+    {
+        // "solve" appears twice here, mirroring how Program.cs's composition root passes
+        // special form names alongside builtins — solve is registered under two arities
+        // (2 and 4) but must still surface as a single suggestion.
+        var functionNames = new[] { "sqrt", "sin", "cos", "if", "solve", "solve" };
+        var handler = new CalculatorCompletionHandler(
+            functionNames,
+            new[] { "/help" },
+            new ListVariablesUseCase(new VariableContext()),
+            new ListFunctionsUseCase(new FunctionContext()));
+
+        handler.GetSuggestions("so", 0).Should().Equal("solve");
+        handler.GetSuggestions("i", 0).Should().Equal("if");
+    }
+
+    [Fact]
+    public void GetSuggestions_DuplicatedSpecialFormName_IsNotSuggestedTwice()
+    {
+        var functionNames = new[] { "sqrt", "solve", "solve" };
+        var handler = new CalculatorCompletionHandler(
+            functionNames,
+            new[] { "/help" },
+            new ListVariablesUseCase(new VariableContext()),
+            new ListFunctionsUseCase(new FunctionContext()));
+
+        handler.GetSuggestions("solve", 0).Should().Equal("solve");
+    }
 }

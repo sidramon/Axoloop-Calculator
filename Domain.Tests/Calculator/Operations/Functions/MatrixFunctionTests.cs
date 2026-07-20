@@ -220,4 +220,136 @@ public class MatrixFunctionTests
 
         act.Should().Throw<InvalidOperationException>();
     }
+
+    [Fact]
+    public void LinSolve_UniqueSystem_ReturnsColumnVector()
+    {
+        var a = M(new double[,] { { 1, 1 }, { 1, -1 } });
+        var b = M(new double[,] { { 3 }, { 1 } });
+
+        var result = (MatrixValue)new LinSolveFunction().Apply(new Value[] { a, b });
+
+        result[0, 0].Should().BeApproximately(2, 1e-9);
+        result[1, 0].Should().BeApproximately(1, 1e-9);
+    }
+
+    [Fact]
+    public void LinSolve_NoSolution_Throws()
+    {
+        var a = M(new double[,] { { 1, 1 }, { 1, 1 } });
+        var b = M(new double[,] { { 1 }, { 2 } });
+
+        var act = () => new LinSolveFunction().Apply(new Value[] { a, b });
+
+        act.Should().Throw<InvalidOperationException>();
+    }
+
+    [Fact]
+    public void LinSolve_InfiniteSolutions_Throws()
+    {
+        var a = M(new double[,] { { 1, 1 } });
+        var b = M(new double[,] { { 2 } });
+
+        var act = () => new LinSolveFunction().Apply(new Value[] { a, b });
+
+        act.Should().Throw<InvalidOperationException>();
+    }
+
+    [Fact]
+    public void LinSolve_NonMatrixArgument_Throws()
+    {
+        var act = () => new LinSolveFunction().Apply(new Value[] { new NumberValue(1), new NumberValue(1) });
+
+        act.Should().Throw<InvalidOperationException>();
+    }
+
+    [Fact]
+    public void LinSolveGeneral_UniqueSystem_ReturnsSingleColumn()
+    {
+        var a = M(new double[,] { { 1, 1 }, { 1, -1 } });
+        var b = M(new double[,] { { 3 }, { 1 } });
+
+        var result = (MatrixValue)new LinSolveGeneralFunction().Apply(new Value[] { a, b });
+
+        result.Columns.Should().Be(1);
+        result[0, 0].Should().BeApproximately(2, 1e-9);
+        result[1, 0].Should().BeApproximately(1, 1e-9);
+    }
+
+    [Fact]
+    public void LinSolveGeneral_InfiniteSolutions_ReturnsParticularAndNullSpaceColumns()
+    {
+        var a = M(new double[,] { { 1, 1 } });
+        var b = M(new double[,] { { 2 } });
+
+        var result = (MatrixValue)new LinSolveGeneralFunction().Apply(new Value[] { a, b });
+
+        result.Columns.Should().Be(2);
+        var particular = M(new double[,] { { result[0, 0] }, { result[1, 0] } });
+        a.Multiply(particular)[0, 0].Should().BeApproximately(2, 1e-9);
+        var basis = M(new double[,] { { result[0, 1] }, { result[1, 1] } });
+        a.Multiply(basis)[0, 0].Should().BeApproximately(0, 1e-9);
+    }
+
+    [Fact]
+    public void LinSolveGeneral_NoSolution_Throws()
+    {
+        var a = M(new double[,] { { 1, 1 }, { 1, 1 } });
+        var b = M(new double[,] { { 1 }, { 2 } });
+
+        var act = () => new LinSolveGeneralFunction().Apply(new Value[] { a, b });
+
+        act.Should().Throw<InvalidOperationException>();
+    }
+
+    [Fact]
+    public void Rref_RankDeficientMatrix_ReturnsNormalizedEchelonForm()
+    {
+        var m = M(new double[,] { { 1, 2 }, { 2, 4 } });
+
+        var result = (MatrixValue)new RrefFunction().Apply(new Value[] { m });
+
+        result[0, 0].Should().BeApproximately(1, 1e-9);
+        result[0, 1].Should().BeApproximately(2, 1e-9);
+        result[1, 0].Should().BeApproximately(0, 1e-9);
+        result[1, 1].Should().BeApproximately(0, 1e-9);
+    }
+
+    [Fact]
+    public void Rref_NonMatrixArgument_Throws()
+    {
+        var act = () => new RrefFunction().Apply(new Value[] { new NumberValue(1) });
+
+        act.Should().Throw<InvalidOperationException>();
+    }
+
+    [Fact]
+    public void NullSpace_RankDeficientMatrix_ReturnsBasisVectorInTheKernel()
+    {
+        var m = M(new double[,] { { 1, 1 }, { 1, 1 } });
+
+        var result = (MatrixValue)new NullSpaceFunction().Apply(new Value[] { m });
+
+        result.Columns.Should().Be(1);
+        m.Multiply(result)[0, 0].Should().BeApproximately(0, 1e-9);
+        m.Multiply(result)[1, 0].Should().BeApproximately(0, 1e-9);
+    }
+
+    [Fact]
+    public void NullSpace_FullColumnRankMatrix_Throws()
+    {
+        var m = M(new double[,] { { 1, 0 }, { 0, 1 } });
+
+        var act = () => new NullSpaceFunction().Apply(new Value[] { m });
+
+        act.Should().Throw<InvalidOperationException>();
+    }
+
+    [Fact]
+    public void NullSpace_NonMatrixArgument_Throws()
+    {
+        var act = () => new NullSpaceFunction().Apply(new Value[] { new NumberValue(1) });
+
+        act.Should().Throw<InvalidOperationException>();
+    }
 }

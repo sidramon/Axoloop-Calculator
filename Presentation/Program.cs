@@ -73,11 +73,17 @@ var functions = new IFunction[]
     new EigenvaluesFunction(),
     new EigenvectorsFunction(),
     new IsSymmetricFunction(),
+    new LinSolveFunction(),
+    new LinSolveGeneralFunction(),
+    new RrefFunction(),
+    new NullSpaceFunction(),
 };
 
 var specialForms = new ISpecialForm[]
 {
     new IfForm(),
+    new SolveForm(),
+    new SolveForm(hasExplicitDomain: true),
 };
 
 var postfixOperators = new IUnaryOperator[]
@@ -133,7 +139,7 @@ var metaCommands = new[]
 };
 
 var completionHandler = new CalculatorCompletionHandler(
-    functions.Select(f => f.Name).ToList(),
+    functions.Select(f => f.Name).Concat(specialForms.Select(f => f.Name)).Distinct().ToList(),
     metaCommands,
     listVariables,
     listFunctions);

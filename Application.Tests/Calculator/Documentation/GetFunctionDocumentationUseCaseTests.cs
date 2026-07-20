@@ -120,4 +120,19 @@ public class GetFunctionDocumentationUseCaseTests
 
         useCase.SuggestSimilarNames("zzz").Should().BeEmpty();
     }
+
+    [Fact]
+    public void Execute_SpecialFormRegisteredUnderMultipleArities_CollapsesToASingleEntry()
+    {
+        var arity2 = new FakeSpecialForm { Name = "solve", Arity = 2, Category = FunctionCategory.Arithmetic };
+        var arity4 = new FakeSpecialForm { Name = "solve", Arity = 4, Category = FunctionCategory.Arithmetic };
+        var useCase = new GetFunctionDocumentationUseCase(Array.Empty<IFunction>(), new[] { arity2, arity4 });
+
+        var groups = useCase.Execute();
+
+        groups.SelectMany(g => g.Functions)
+            .Count(f => string.Equals(f.Name, "solve", StringComparison.OrdinalIgnoreCase))
+            .Should().Be(1);
+        useCase.Execute("solve").Should().NotBeNull();
+    }
 }
