@@ -21,10 +21,17 @@ Axoloop> a * inverse(a)
 │ 0 │ 1 │
 ╰───┴───╯
 
-Axoloop> f(x) := sin(x) / x
+Axoloop> solve(x^2 = 4, x)
+x = -2
+x = 2
+
+Axoloop> f(x) := x^2
 f(x) defined
 
-Axoloop> /plotweb f -10 10
+Axoloop> deriv(f)(3)
+6
+
+Axoloop> /plotweb deriv(f) -10 10
 ```
 
 ## Features
@@ -37,12 +44,33 @@ short-circuit evaluation.
 Variables persist across the session; mathematical constants are write-protected.
 
 **User-defined functions** — `y(x) := 2*x + 5`, including recursion with `if`.
+Functions are first-class values: a bare name like `y` evaluates to a callable,
+so it can be passed to another function, returned from one, or called again
+immediately — `deriv(y)(3)` chains a second call directly onto the result of
+the first.
 
 **Linear algebra** — determinant, inverse, rank, trace, transpose, dot and cross
 products, eigenvalues and eigenvectors, reshape, identity and fill constructors.
 
+**Equation and linear-system solving** — `solve(equation, unknown)` numerically
+finds the real roots of an equation written as-is (`solve(x^2 = 4, x)`), with an
+explicit-domain overload to isolate one root among several. `linsolve` and
+`linsolvegen` solve `a*x = b` by Gauss-Jordan elimination, covering all three
+cases — a unique solution, no solution, or infinitely many, returned as a
+particular solution plus a null-space basis; `rref` and `nullspace` expose the
+underlying steps directly.
+
+**Calculus** — `deriv(f, x)` for the first derivative, `deriv(f, n, x)` for the
+nth via higher-order finite-difference stencils, and `integral(f, a, b)` for a
+definite integral by Simpson's rule. `deriv(f)`, `integral(f)` and
+`integral(f, a)` return a derivative or antiderivative as a callable function
+rather than a single value, so it can be composed or plotted directly.
+
 **Plotting** — ASCII rendering in the terminal, or an interactive HTML view with
-zoom, pan, point inspection, and detected zeros and local extrema.
+zoom, pan, point inspection, and detected zeros and local extrema. `/plot`,
+`/plotweb`, `/zeros` and `/extrema` accept any function-valued expression, not
+just a defined name — `/plotweb deriv(f) -10 10` plots a derivative directly.
+`plot(f, xMin, xMax)` returns raw samples as a matrix instead of rendering.
 
 **Built-in documentation** — every function carries its own signature, description
 and examples; `/help <name>`, `/functions` and a generated web reference all come
@@ -50,7 +78,7 @@ from that single source.
 
 ## Getting started
 
-Requires the .NET 8 SDK.
+Requires the .NET 10 SDK (a preview build was used during development).
 
 ```bash
 git clone https://github.com/sidramon/Axoloop-Calculator.git
@@ -110,11 +138,23 @@ are at call time. That suits a REPL, but it is a defensible thing to disagree wi
 
 ## Known limits
 
-No complex numbers, so `eigvals` refuses matrices with complex eigenvalues and
-`sqrt(-1)` is an error. Everything is numeric — there is no symbolic layer, so no
-algebraic differentiation, factoring or `solve`. `det` uses cofactor expansion,
-which is fine for hand-typed matrices and unusable beyond roughly 10×10. The web
-plot zooms over pre-computed samples, so it cannot resolve detail past the sampled
+Everything is numeric — there is no symbolic layer, so no algebraic
+differentiation or factoring; `solve`, `deriv` and `integral` all work by
+approximation rather than exact manipulation. `solve` scans a fixed domain
+(`[-100, 100]` by default) for sign changes, so a periodic equation reports at
+most the first 10 of its roots even when infinitely many exist, and a root
+outside the scanned domain is simply not found. Derivatives lose precision
+quickly past first order — expect noticeably fewer correct digits at
+`deriv(f, 2, x)` than at `deriv(f, x)`, and worse still at order 3 or 4 — because
+higher-order finite-difference stencils amplify rounding error, which is also
+why orders above 4 are rejected outright. `integral(f)` and `integral(f, a)`
+return a callable antiderivative that reruns a full quadrature on every
+invocation, so sampling it at many points (e.g. for a plot) is proportionally
+expensive. No complex numbers, so `eigvals` refuses matrices with complex
+eigenvalues and `sqrt(-1)` is an error; `eigvecs` goes further still and only
+supports symmetric matrices. `det` uses cofactor expansion — `O(n!)` — which is
+fine for hand-typed matrices and unusable beyond roughly 10×10. The web plot
+zooms over pre-computed samples, so it cannot resolve detail past the sampled
 domain.
 
 ## Contributing
@@ -127,8 +167,15 @@ worth having.
 A few things that would be genuinely useful:
 
 - **Complex numbers** — the largest missing piece, and the one that unblocks
-  several others
-- **Symbolic layer** — derivatives, factoring, equation solving
+  several others, including `eigvecs` on non-symmetric matrices
+- **Symbolic layer** — algebraic differentiation, factoring, and exact equation
+  solving; `solve`, `deriv` and `integral` are numeric-only today
+- **Numerical limits** — an `EquationSolver` (Newton-Raphson with a bisection
+  fallback) already exists in `Domain/Calculator/Algorithms`, built originally
+  for the since-removed `fsolve`; it has no caller today but is a reasonable
+  starting point for a `lim` function
+- **Faster determinant** — cofactor expansion is `O(n!)`; an LU-based approach
+  would scale well past 10×10
 - **Statistics** — descriptive functions and distributions
 - **More renderers** — PNG output, or a web front-end reusing the existing use cases
 
