@@ -102,7 +102,7 @@ var listVariables    = new ListVariablesUseCase(context);
 var listFunctions    = new ListFunctionsUseCase(functionContext);
 var functionDocs     = new GetFunctionDocumentationUseCase(functions, specialForms);
 var operatorDocs     = new GetOperatorDocumentationUseCase(OperatorDocumentation.All);
-var plotFunction     = new PlotFunctionUseCase(functionContext, evaluator, context);
+var plotFunction     = new PlotFunctionUseCase();
 var formatter        = new NumberFormatter(FormatOptions.Default);
 
 IDocumentationRenderer documentationRenderer = new HtmlDocumentationRenderer();

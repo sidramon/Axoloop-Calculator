@@ -1,36 +1,25 @@
 namespace Application.Calculator.Plotting;
 
-using Domain.Calculator;
 using Domain.Calculator.Algorithms;
 using Domain.Calculator.Plotting;
 using Domain.Calculator.Values;
 
 /// <summary>
-/// Samples a user-defined, single-parameter function (resolved through
-/// <see cref="FunctionContext"/>) into a <see cref="PlotSeries"/> ready to render.
-/// Never lets an evaluation failure escape: a single bad point becomes a gap, not a
-/// failed plot. Only structural problems (unknown function, wrong arity, an
-/// inconsistent domain) throw.
+/// Samples a single-parameter <see cref="FunctionValue"/> into a <see cref="PlotSeries"/>
+/// ready to render. Never lets an evaluation failure escape: a single bad point becomes a
+/// gap, not a failed plot. Only structural problems (wrong arity, an inconsistent domain)
+/// throw.
 /// </summary>
 public sealed class PlotFunctionUseCase
 {
-    private readonly FunctionContext _functions;
-    private readonly Evaluator _evaluator;
-    private readonly VariableContext _globalContext;
-
-    public PlotFunctionUseCase(FunctionContext functions, Evaluator evaluator, VariableContext globalContext)
-    {
-        _functions = functions;
-        _evaluator = evaluator;
-        _globalContext = globalContext;
-    }
-
-    public PlotSeries Sample(string functionName, double xMin, double xMax, PlotSampleRequest request)
+    public PlotSeries Sample(FunctionValue function, double xMin, double xMax, PlotSampleRequest request)
     {
         if (!(xMax > xMin))
             throw new InvalidOperationException($"Invalid domain: xMin ({xMin}) must be less than xMax ({xMax}).");
 
-        var function = ResolveFunction(functionName);
+        if (function.Arity != 1)
+            throw new InvalidOperationException(
+                $"'{function.Name}' must take exactly one parameter to be plotted (it takes {function.Arity}).");
 
         var (sampleXMin, sampleXMax) = request.Oversample
             ? Widen(xMin, xMax, request.OversampleFactor)
@@ -47,31 +36,15 @@ public sealed class PlotFunctionUseCase
         var zeros = RootFinding.FindSignChanges(points, x => EvaluateAt(function, x), request.ZeroTolerance);
         var extrema = ExtremaFinding.Find(points, request.ExtremumTolerance);
 
-        return new PlotSeries(functionName, points, sampleXMin, sampleXMax, yMin, yMax, zeros, extrema);
+        return new PlotSeries(function.Name, points, sampleXMin, sampleXMax, yMin, yMax, zeros, extrema);
     }
 
-    private UserFunction ResolveFunction(string name)
+    private static double? EvaluateAt(FunctionValue function, double x)
     {
-        if (!_functions.TryGet(name, out var function))
-            throw new InvalidOperationException(
-                $"Undefined function '{name}'. Define it first, e.g. '{name}(x) := ...'.");
-
-        if (function.Parameters.Count != 1)
-            throw new InvalidOperationException(
-                $"'{name}' must take exactly one parameter to be plotted (it takes {function.Parameters.Count}).");
-
-        return function;
-    }
-
-    private double? EvaluateAt(UserFunction function, double x)
-    {
-        var scope = _globalContext.CreateChild();
-        scope.Bind(function.Parameters[0], new NumberValue(x));
-
         Value result;
         try
         {
-            result = _evaluator.Evaluate(function.Body, scope);
+            result = function.Invoke(new Value[] { new NumberValue(x) });
         }
         catch
         {
@@ -86,7 +59,7 @@ public sealed class PlotFunctionUseCase
             : number.Number;
     }
 
-    private List<PlotPoint> EvaluateRawPoints(UserFunction function, double xMin, double xMax, int sampleCount)
+    private static List<PlotPoint> EvaluateRawPoints(FunctionValue function, double xMin, double xMax, int sampleCount)
     {
         var points = new List<PlotPoint>(sampleCount);
         var step = (xMax - xMin) / (sampleCount - 1);

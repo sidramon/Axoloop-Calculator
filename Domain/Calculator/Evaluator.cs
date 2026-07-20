@@ -9,8 +9,10 @@ public sealed class Evaluator
 {
     private const int MaxCallDepth = 64;
 
-    private readonly IReadOnlyDictionary<string, IFunction> _builtins;
-    private readonly IReadOnlyDictionary<string, ISpecialForm> _specialForms;
+    private readonly IReadOnlyDictionary<(string Name, int Arity), IFunction> _builtins;
+    private readonly IReadOnlyDictionary<string, IReadOnlyList<int>> _builtinArities;
+    private readonly IReadOnlyDictionary<(string Name, int Arity), ISpecialForm> _specialForms;
+    private readonly IReadOnlyDictionary<string, IReadOnlyList<int>> _specialFormArities;
     private readonly FunctionContext _functions;
     private int _callDepth;
 
@@ -19,19 +21,30 @@ public sealed class Evaluator
         IEnumerable<ISpecialForm> specialForms,
         FunctionContext functions)
     {
-        _builtins = builtins.ToDictionary(f => f.Name);
-        _specialForms = specialForms.ToDictionary(f => f.Name);
+        var builtinList = builtins.ToList();
+        _builtins = builtinList.ToDictionary(f => (f.Name, f.Arity));
+        _builtinArities = builtinList
+            .GroupBy(f => f.Name)
+            .ToDictionary(g => g.Key, g => (IReadOnlyList<int>)g.Select(f => f.Arity).OrderBy(a => a).ToList());
+
+        var specialFormList = specialForms.ToList();
+        _specialForms = specialFormList.ToDictionary(f => (f.Name, f.Arity));
+        _specialFormArities = specialFormList
+            .GroupBy(f => f.Name)
+            .ToDictionary(g => g.Key, g => (IReadOnlyList<int>)g.Select(f => f.Arity).OrderBy(a => a).ToList());
+
         _functions = functions;
     }
 
     public Value Evaluate(IExpression expression, VariableContext context) => expression switch
     {
         NumberExpression number           => number.Value,
-        IdentifierExpression id           => context.Get(id.Name),
+        IdentifierExpression id           => ResolveIdentifier(id.Name, context),
         AssignmentExpression assign       => Assign(assign, context),
         FunctionDefinitionExpression def  => DefineFunction(def),
         UnaryExpression unary             => unary.Operator.Apply(Evaluate(unary.Operand, context)),
         CallExpression call               => EvaluateCall(call, context),
+        InvokeExpression invoke           => EvaluateInvoke(invoke, context),
         LogicalExpression logical         => EvaluateLogical(logical, context),
         NotExpression not                 => EvaluateNot(not, context),
         MatrixExpression matrix           => EvaluateMatrix(matrix, context),
@@ -40,6 +53,39 @@ public sealed class Evaluator
             Evaluate(binary.Right, context)),
         _ => throw new NotSupportedException($"Unknown expression type: {expression.GetType().Name}")
     };
+
+    private Value ResolveIdentifier(string name, VariableContext context)
+    {
+        if (context.IsDefined(name))
+            return context.Get(name);
+
+        if (_specialFormArities.ContainsKey(name))
+            throw new InvalidOperationException(
+                $"'{name}' is a special form and can only be used as a call, e.g. '{name}(...)'.");
+
+        if (_functions.TryGet(name, out var userFunction))
+        {
+            var signature = $"{userFunction.Name}({string.Join(", ", userFunction.Parameters)})";
+            return new FunctionValue(
+                userFunction.Name,
+                userFunction.Parameters.Count,
+                signature,
+                args => InvokeUserFunction(userFunction, args, context));
+        }
+
+        if (_builtinArities.TryGetValue(name, out var builtinArities))
+        {
+            if (builtinArities.Count > 1)
+                throw new InvalidOperationException(
+                    $"'{name}' has multiple overloads ({string.Join(", ", builtinArities)} argument(s)) " +
+                    $"and cannot be used as a bare value; call it directly, e.g. '{name}(...)'.");
+
+            var builtin = _builtins[(name, builtinArities[0])];
+            return new FunctionValue(builtin.Name, builtin.Arity, builtin.Signature, builtin.Apply);
+        }
+
+        throw new InvalidOperationException($"Undefined variable '{name}'.");
+    }
 
     private Value Assign(AssignmentExpression assign, VariableContext context)
     {
@@ -50,7 +96,7 @@ public sealed class Evaluator
 
     private Value DefineFunction(FunctionDefinitionExpression definition)
     {
-        if (_specialForms.ContainsKey(definition.Name) || _builtins.ContainsKey(definition.Name))
+        if (_specialFormArities.ContainsKey(definition.Name) || _builtinArities.ContainsKey(definition.Name))
             throw new InvalidOperationException($"'{definition.Name}' is a built-in and cannot be redefined.");
 
         _functions.Define(new UserFunction(definition.Name, definition.Parameters, definition.Body));
@@ -59,15 +105,20 @@ public sealed class Evaluator
 
     private Value EvaluateCall(CallExpression call, VariableContext context)
     {
-        if (_specialForms.TryGetValue(call.Name, out var specialForm))
+        if (_specialFormArities.TryGetValue(call.Name, out var arities))
         {
-            RequireArity(specialForm.Name, specialForm.Arity, call.Arguments.Count);
+            if (!_specialForms.TryGetValue((call.Name, call.Arguments.Count), out var specialForm))
+                throw new InvalidOperationException(
+                    $"'{call.Name}' expects {string.Join(" or ", arities)} argument(s) but got {call.Arguments.Count}.");
             return specialForm.Apply(call.Arguments, context, this);
         }
 
-        if (_builtins.TryGetValue(call.Name, out var builtin))
+        if (_builtinArities.TryGetValue(call.Name, out var callArities))
         {
-            RequireArity(builtin.Name, builtin.Arity, call.Arguments.Count);
+            if (!_builtins.TryGetValue((call.Name, call.Arguments.Count), out var builtin))
+                throw new InvalidOperationException(
+                    $"'{call.Name}' expects {string.Join(" or ", callArities)} argument(s) but got {call.Arguments.Count}.");
+
             var args = call.Arguments.Select(a => Evaluate(a, context)).ToList();
             return builtin.Apply(args);
         }
@@ -80,22 +131,59 @@ public sealed class Evaluator
                 throw new InvalidOperationException("Maximum call depth exceeded.");
 
             var args = call.Arguments.Select(a => Evaluate(a, context)).ToList();
-            var scope = context.CreateChild();
-            for (var i = 0; i < userFunction.Parameters.Count; i++)
-                scope.Bind(userFunction.Parameters[i], args[i]);
-
-            _callDepth++;
-            try
-            {
-                return Evaluate(userFunction.Body, scope);
-            }
-            finally
-            {
-                _callDepth--;
-            }
+            return InvokeUserFunctionBody(userFunction, args, context);
         }
 
         throw new InvalidOperationException($"Undefined function '{call.Name}'.");
+    }
+
+    private Value EvaluateInvoke(InvokeExpression invoke, VariableContext context)
+    {
+        var target = Evaluate(invoke.Target, context);
+
+        if (target is not FunctionValue function)
+            throw new InvalidOperationException($"Cannot invoke a {TypeName(target)}.");
+
+        var args = invoke.Arguments.Select(a => Evaluate(a, context)).ToList();
+
+        // FunctionValue.Invoke checks arity itself. For a user function, the delegate it
+        // wraps is InvokeUserFunction below, which already enforces the call-depth guard —
+        // no separate bookkeeping is needed here to cover this path.
+        return function.Invoke(args);
+    }
+
+    private static string TypeName(Value value) => value switch
+    {
+        NumberValue   => "number",
+        BooleanValue  => "boolean",
+        MatrixValue   => "matrix",
+        SolutionValue => "solution",
+        _ => "value"
+    };
+
+    private Value InvokeUserFunction(UserFunction userFunction, IReadOnlyList<Value> args, VariableContext context)
+    {
+        if (_callDepth >= MaxCallDepth)
+            throw new InvalidOperationException("Maximum call depth exceeded.");
+
+        return InvokeUserFunctionBody(userFunction, args, context);
+    }
+
+    private Value InvokeUserFunctionBody(UserFunction userFunction, IReadOnlyList<Value> args, VariableContext context)
+    {
+        var scope = context.CreateChild();
+        for (var i = 0; i < userFunction.Parameters.Count; i++)
+            scope.Bind(userFunction.Parameters[i], args[i]);
+
+        _callDepth++;
+        try
+        {
+            return Evaluate(userFunction.Body, scope);
+        }
+        finally
+        {
+            _callDepth--;
+        }
     }
 
     private static void RequireArity(string name, int expected, int actual)

@@ -56,14 +56,14 @@ public sealed class CommandRouter
     {
         if (input.StartsWith('/'))
         {
-            HandleMetaCommand(input);
+            await HandleMetaCommand(input, ct);
             return;
         }
 
         await HandleExpressionAsync(input, ct);
     }
 
-    private void HandleMetaCommand(string input)
+    private async Task HandleMetaCommand(string input, CancellationToken ct)
     {
         var parts = input.Split(' ', 2, StringSplitOptions.RemoveEmptyEntries);
         var command = parts[0];
@@ -97,19 +97,19 @@ public sealed class CommandRouter
                 break;
 
             case "/plot":
-                HandlePlot(argument);
+                await HandlePlot(argument, ct);
                 break;
 
             case "/plotweb":
-                HandlePlotWeb(argument);
+                await HandlePlotWeb(argument, ct);
                 break;
 
             case "/zeros":
-                HandleZeros(argument);
+                await HandleZeros(argument, ct);
                 break;
 
             case "/extrema":
-                HandleExtrema(argument);
+                await HandleExtrema(argument, ct);
                 break;
 
             case "/clear":
@@ -169,7 +169,7 @@ public sealed class CommandRouter
         _viewLauncher.Open(html, "html");
     }
 
-    private void HandlePlot(string? argument)
+    private async Task HandlePlot(string? argument, CancellationToken ct)
     {
         if (!TryParsePlotArguments(argument, out var name, out var xMin, out var xMax, out var error))
         {
@@ -179,8 +179,9 @@ public sealed class CommandRouter
 
         try
         {
+            var function = await ResolveFunctionValue(name, ct);
             var request = new PlotSampleRequest(SampleCount: AsciiSampleCount);
-            var series = _plotFunction.Sample(name, xMin, xMax, request);
+            var series = _plotFunction.Sample(function, xMin, xMax, request);
             var options = new PlotOptions(Width: 0, Height: 0, VisibleXMin: xMin, VisibleXMax: xMax);
             AnsiConsole.Markup(_plotRenderers[PlotFormat.Ascii].Render(series, options));
         }
@@ -190,7 +191,7 @@ public sealed class CommandRouter
         }
     }
 
-    private void HandlePlotWeb(string? argument)
+    private async Task HandlePlotWeb(string? argument, CancellationToken ct)
     {
         if (!TryParsePlotArguments(argument, out var name, out var xMin, out var xMax, out var error))
         {
@@ -200,8 +201,9 @@ public sealed class CommandRouter
 
         try
         {
+            var function = await ResolveFunctionValue(name, ct);
             var request = new PlotSampleRequest(SampleCount: WebSampleCount, Oversample: true);
-            var series = _plotFunction.Sample(name, xMin, xMax, request);
+            var series = _plotFunction.Sample(function, xMin, xMax, request);
             var options = new PlotOptions(Width: 1000, Height: 600, VisibleXMin: xMin, VisibleXMax: xMax);
             var html = _plotRenderers[PlotFormat.Html].Render(series, options);
             _viewLauncher.Open(html, "html");
@@ -212,7 +214,7 @@ public sealed class CommandRouter
         }
     }
 
-    private void HandleZeros(string? argument)
+    private async Task HandleZeros(string? argument, CancellationToken ct)
     {
         if (!TryParsePlotArguments(argument, out var name, out var xMin, out var xMax, out var error))
         {
@@ -222,8 +224,9 @@ public sealed class CommandRouter
 
         try
         {
+            var function = await ResolveFunctionValue(name, ct);
             var request = new PlotSampleRequest(SampleCount: AsciiSampleCount);
-            var series = _plotFunction.Sample(name, xMin, xMax, request);
+            var series = _plotFunction.Sample(function, xMin, xMax, request);
 
             if (series.Zeros.Count == 0)
                 AnsiConsole.MarkupLine("[grey]No zeros found in this domain.[/]");
@@ -237,7 +240,7 @@ public sealed class CommandRouter
         }
     }
 
-    private void HandleExtrema(string? argument)
+    private async Task HandleExtrema(string? argument, CancellationToken ct)
     {
         if (!TryParsePlotArguments(argument, out var name, out var xMin, out var xMax, out var error))
         {
@@ -247,8 +250,9 @@ public sealed class CommandRouter
 
         try
         {
+            var function = await ResolveFunctionValue(name, ct);
             var request = new PlotSampleRequest(SampleCount: AsciiSampleCount);
-            var series = _plotFunction.Sample(name, xMin, xMax, request);
+            var series = _plotFunction.Sample(function, xMin, xMax, request);
 
             if (series.Extrema.Count == 0)
             {
@@ -269,6 +273,14 @@ public sealed class CommandRouter
         }
     }
 
+    private async Task<FunctionValue> ResolveFunctionValue(string name, CancellationToken ct)
+    {
+        var value = await _evaluate.ExecuteAsync(name, ct);
+        if (value is not FunctionValue function)
+            throw new InvalidOperationException($"'{name}' must evaluate to a function.");
+        return function;
+    }
+
     private static string FormatZero(double value) => value.ToString("0.####", CultureInfo.InvariantCulture);
 
     private static bool TryParsePlotArguments(
@@ -281,7 +293,7 @@ public sealed class CommandRouter
 
         if (string.IsNullOrWhiteSpace(argument))
         {
-            error = "Usage: <command> <function> [xMin] [xMax]";
+            error = "Usage: <command> <expr> [xMin] [xMax]";
             return false;
         }
 
@@ -302,7 +314,7 @@ public sealed class CommandRouter
             return false;
         }
 
-        error = "Usage: <command> <function> [xMin] [xMax]";
+        error = "Usage: <command> <expr> [xMin] [xMax]";
         return false;
     }
 
@@ -314,7 +326,19 @@ public sealed class CommandRouter
 
             if (result is MatrixValue matrix)
             {
-                AnsiConsole.Write(MatrixRenderer.Render(matrix, _formatter.FormatNumber));
+                var rendered = MatrixRenderer.Render(matrix, _formatter.FormatNumber, AnsiConsole.Profile.Width);
+                if (rendered.Note is not null)
+                    AnsiConsole.MarkupLine($"[grey]{Markup.Escape(rendered.Note)}[/]");
+                AnsiConsole.Write(rendered.Table);
+            }
+            else if (result is SolutionValue solution)
+            {
+                foreach (var line in _formatter.FormatSolutionLines(solution))
+                    AnsiConsole.MarkupLine($"[green]{Markup.Escape(line)}[/]");
+
+                var hint = _formatter.FormatSolutionHint(solution);
+                if (hint is not null)
+                    AnsiConsole.MarkupLine($"[grey]{Markup.Escape(hint)}[/]");
             }
             else
             {

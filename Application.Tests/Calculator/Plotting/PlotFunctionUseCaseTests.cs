@@ -13,6 +13,8 @@ using FluentAssertions;
 
 public class PlotFunctionUseCaseTests
 {
+    private static readonly PlotFunctionUseCase UseCase = new();
+
     private static (Evaluator Evaluator, FunctionContext Functions, VariableContext Globals) CreateHarness(
         IEnumerable<IFunction>? builtins = null, IEnumerable<ISpecialForm>? specialForms = null)
     {
@@ -27,6 +29,9 @@ public class PlotFunctionUseCaseTests
     private static void DefineFunction(FunctionContext functions, string name, string parameter, IExpression body) =>
         functions.Define(new UserFunction(name, new[] { parameter }, body));
 
+    private static FunctionValue Resolve(Evaluator evaluator, VariableContext globals, string name) =>
+        (FunctionValue)evaluator.Evaluate(new IdentifierExpression(name), globals);
+
     private static IExpression Square(string variable) => new BinaryExpression(
         new IdentifierExpression(variable), new PowerOperator(), new NumberExpression(new NumberValue(2)));
 
@@ -38,9 +43,9 @@ public class PlotFunctionUseCaseTests
     {
         var (evaluator, functions, globals) = CreateHarness();
         DefineFunction(functions, "f", "x", Square("x"));
-        var useCase = new PlotFunctionUseCase(functions, evaluator, globals);
+        var function = Resolve(evaluator, globals, "f");
 
-        var series = useCase.Sample("f", -5, 5, new PlotSampleRequest(SampleCount: 50));
+        var series = UseCase.Sample(function, -5, 5, new PlotSampleRequest(SampleCount: 50));
 
         series.Points.Should().HaveCount(50);
         series.Points[0].X.Should().BeApproximately(-5, 1e-9);
@@ -55,9 +60,9 @@ public class PlotFunctionUseCaseTests
     {
         var (evaluator, functions, globals) = CreateHarness();
         DefineFunction(functions, "f", "x", Square("x"));
-        var useCase = new PlotFunctionUseCase(functions, evaluator, globals);
+        var function = Resolve(evaluator, globals, "f");
 
-        var series = useCase.Sample("f", -5, 5, new PlotSampleRequest(SampleCount: 41));
+        var series = UseCase.Sample(function, -5, 5, new PlotSampleRequest(SampleCount: 41));
 
         series.Extrema.Should().ContainSingle();
         series.Extrema[0].Kind.Should().Be(ExtremumKind.Minimum);
@@ -70,9 +75,9 @@ public class PlotFunctionUseCaseTests
         var (evaluator, functions, globals) = CreateHarness(new[] { new LnFunction() });
         DefineFunction(functions, "f", "x",
             new CallExpression("ln", new IExpression[] { new IdentifierExpression("x") }));
-        var useCase = new PlotFunctionUseCase(functions, evaluator, globals);
+        var function = Resolve(evaluator, globals, "f");
 
-        var series = useCase.Sample("f", -5, 5, new PlotSampleRequest(SampleCount: 101));
+        var series = UseCase.Sample(function, -5, 5, new PlotSampleRequest(SampleCount: 101));
 
         series.Points.Should().Contain(p => p.X < 0 && p.Y == null);
         series.Points.Should().Contain(p => p.X > 0 && p.Y.HasValue);
@@ -83,11 +88,11 @@ public class PlotFunctionUseCaseTests
     {
         var (evaluator, functions, globals) = CreateHarness();
         DefineFunction(functions, "f", "x", Reciprocal("x"));
-        var useCase = new PlotFunctionUseCase(functions, evaluator, globals);
+        var function = Resolve(evaluator, globals, "f");
 
         // Domain [-1, 1] with an even sample count never lands exactly on x = 0, so any gap
         // here must come from the asymptote heuristic, not from a DivideByZeroException.
-        var series = useCase.Sample("f", -1, 1, new PlotSampleRequest(
+        var series = UseCase.Sample(function, -1, 1, new PlotSampleRequest(
             SampleCount: 100,
             YBounds: (-10, 10),
             MagnitudeMultiplier: 2));
@@ -109,10 +114,10 @@ public class PlotFunctionUseCaseTests
             new IdentifierExpression("x"),
         });
         DefineFunction(functions, "f", "x", body);
-        var useCase = new PlotFunctionUseCase(functions, evaluator, globals);
+        var function = Resolve(evaluator, globals, "f");
 
         // 101 points over [-5, 5] hits x = 0 exactly once: a single outlier among 100 normal values.
-        var series = useCase.Sample("f", -5, 5, new PlotSampleRequest(SampleCount: 101));
+        var series = UseCase.Sample(function, -5, 5, new PlotSampleRequest(SampleCount: 101));
 
         series.YMax.Should().BeLessThan(100);
     }
@@ -122,24 +127,13 @@ public class PlotFunctionUseCaseTests
     {
         var (evaluator, functions, globals) = CreateHarness();
         DefineFunction(functions, "f", "x", new IdentifierExpression("x"));
-        var useCase = new PlotFunctionUseCase(functions, evaluator, globals);
+        var function = Resolve(evaluator, globals, "f");
 
-        var series = useCase.Sample(
-            "f", -1, 1, new PlotSampleRequest(SampleCount: 40, Oversample: true, OversampleFactor: 4));
+        var series = UseCase.Sample(
+            function, -1, 1, new PlotSampleRequest(SampleCount: 40, Oversample: true, OversampleFactor: 4));
 
         series.XMin.Should().BeApproximately(-4, 1e-9);
         series.XMax.Should().BeApproximately(4, 1e-9);
-    }
-
-    [Fact]
-    public void Sample_UnknownFunction_ThrowsClearError()
-    {
-        var (evaluator, functions, globals) = CreateHarness();
-        var useCase = new PlotFunctionUseCase(functions, evaluator, globals);
-
-        var act = () => useCase.Sample("nope", -5, 5, new PlotSampleRequest(SampleCount: 10));
-
-        act.Should().Throw<InvalidOperationException>().WithMessage("*nope*");
     }
 
     [Fact]
@@ -147,9 +141,9 @@ public class PlotFunctionUseCaseTests
     {
         var (evaluator, functions, globals) = CreateHarness();
         functions.Define(new UserFunction("f", new[] { "a", "b" }, new NumberExpression(new NumberValue(0))));
-        var useCase = new PlotFunctionUseCase(functions, evaluator, globals);
+        var function = Resolve(evaluator, globals, "f");
 
-        var act = () => useCase.Sample("f", -5, 5, new PlotSampleRequest(SampleCount: 10));
+        var act = () => UseCase.Sample(function, -5, 5, new PlotSampleRequest(SampleCount: 10));
 
         act.Should().Throw<InvalidOperationException>().WithMessage("*one parameter*");
     }
@@ -159,9 +153,9 @@ public class PlotFunctionUseCaseTests
     {
         var (evaluator, functions, globals) = CreateHarness();
         DefineFunction(functions, "f", "x", new IdentifierExpression("x"));
-        var useCase = new PlotFunctionUseCase(functions, evaluator, globals);
+        var function = Resolve(evaluator, globals, "f");
 
-        var act = () => useCase.Sample("f", 5, -5, new PlotSampleRequest(SampleCount: 10));
+        var act = () => UseCase.Sample(function, 5, -5, new PlotSampleRequest(SampleCount: 10));
 
         act.Should().Throw<InvalidOperationException>();
     }

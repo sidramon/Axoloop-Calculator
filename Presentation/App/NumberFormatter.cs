@@ -19,8 +19,31 @@ public sealed class NumberFormatter
         NumberValue n  => FormatNumber(n.Number),
         BooleanValue b => b.Boolean ? "True" : "False",
         FunctionDefinedValue f => $"{f.Name}({string.Join(", ", f.Parameters)}) defined",
+        FunctionValue fn => fn.Signature,
+        SolutionValue s => FormatSolutionInline(s),
         _ => value.ToString() ?? ""
     };
+
+    private string FormatSolutionInline(SolutionValue solution)
+    {
+        var roots = string.Join(", ", solution.Values.Select(v => $"{solution.Unknown} = {FormatNumber(v)}"));
+        var omitted = solution.TotalFound - solution.Values.Count;
+        return omitted > 0 ? $"{roots} (+{omitted} more)" : roots;
+    }
+
+    /// <summary>One "unknown = value" line per root, for a multi-line top-level echo.</summary>
+    public IReadOnlyList<string> FormatSolutionLines(SolutionValue solution) =>
+        solution.Values.Select(v => $"{solution.Unknown} = {FormatNumber(v)}").ToList();
+
+    /// <summary>
+    /// Non-null only when roots were capped for display — names the real count and points
+    /// at the explicit-domain overload to narrow it down.
+    /// </summary>
+    public string? FormatSolutionHint(SolutionValue solution) =>
+        solution.TotalFound > solution.Values.Count
+            ? $"{solution.TotalFound} roots found in total; showing the first {solution.Values.Count}. " +
+              "Restrict the domain with solve(equation, unknown, xMin, xMax) to narrow it down."
+            : null;
 
     public string FormatNumber(double x)
     {

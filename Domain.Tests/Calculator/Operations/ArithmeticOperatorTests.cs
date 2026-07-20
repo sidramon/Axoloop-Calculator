@@ -37,6 +37,16 @@ public class ArithmeticOperatorTests
             .WithMessage("*addition*number*matrix*");
     }
 
+    [Fact]
+    public void Add_NumberAndSolutionValue_ThrowsInvalidOperationExceptionNamingSolution()
+    {
+        var solution = new SolutionValue("x", new[] { 2.5 }, 1);
+
+        var act = () => new AddOperator().Apply(solution, new NumberValue(1));
+
+        act.Should().Throw<InvalidOperationException>().WithMessage("*addition*solution*");
+    }
+
     // ---- Subtract ----
 
     [Fact]

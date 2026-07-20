@@ -43,9 +43,11 @@ internal static class ValueArithmetic
 
     private static string TypeName(Value v) => v switch
     {
-        NumberValue  => "number",
-        BooleanValue => "boolean",
-        MatrixValue  => "matrix",
+        NumberValue    => "number",
+        BooleanValue   => "boolean",
+        MatrixValue    => "matrix",
+        FunctionValue  => "function",
+        SolutionValue  => "solution",
         _ => "value"
     };
 }

@@ -149,15 +149,55 @@ public sealed class Parser
     {
         var operand = ParsePrimary(tokens, ref position);
 
-        while (position < tokens.Count
-               && tokens[position].Type == TokenType.Operator
-               && _postfixOperators.TryGetValue(tokens[position].Symbol, out var postfix))
+        while (true)
         {
-            position++;
-            operand = new UnaryExpression(operand, postfix);
+            if (position < tokens.Count && tokens[position].Type == TokenType.LeftParen)
+            {
+                var arguments = ParseArgumentList(tokens, ref position, "a chained call");
+                operand = new InvokeExpression(operand, arguments);
+                continue;
+            }
+
+            if (position < tokens.Count
+                && tokens[position].Type == TokenType.Operator
+                && _postfixOperators.TryGetValue(tokens[position].Symbol, out var postfix))
+            {
+                position++;
+                operand = new UnaryExpression(operand, postfix);
+                continue;
+            }
+
+            break;
         }
 
         return operand;
+    }
+
+    private IReadOnlyList<IExpression> ParseArgumentList(IReadOnlyList<Token> tokens, ref int position, string context)
+    {
+        position++; // consume '('
+
+        var arguments = new List<IExpression>();
+        if (position < tokens.Count && tokens[position].Type != TokenType.RightParen)
+        {
+            while (true)
+            {
+                arguments.Add(ParseExpression(tokens, ref position, 0));
+
+                if (position < tokens.Count && tokens[position].Type == TokenType.Comma)
+                {
+                    position++;
+                    continue;
+                }
+                break;
+            }
+        }
+
+        if (position >= tokens.Count || tokens[position].Type != TokenType.RightParen)
+            throw new FormatException($"Missing closing parenthesis in {context}.");
+        position++;
+
+        return arguments;
     }
 
     private IExpression ParseUnaryPrefix(IReadOnlyList<Token> tokens, ref int position)
@@ -204,27 +244,7 @@ public sealed class Parser
                 if (position >= tokens.Count || tokens[position].Type != TokenType.LeftParen)
                     return new IdentifierExpression(name);
 
-                position++;
-                var args = new List<IExpression>();
-                if (position < tokens.Count && tokens[position].Type != TokenType.RightParen)
-                {
-                    while (true)
-                    {
-                        args.Add(ParseExpression(tokens, ref position, 0));
-
-                        if (position < tokens.Count && tokens[position].Type == TokenType.Comma)
-                        {
-                            position++;
-                            continue;
-                        }
-                        break;
-                    }
-                }
-
-                if (position >= tokens.Count || tokens[position].Type != TokenType.RightParen)
-                    throw new FormatException($"Missing closing parenthesis in '{name}'.");
-                position++;
-
+                var args = ParseArgumentList(tokens, ref position, $"'{name}'");
                 return new CallExpression(name, args);
             }
 

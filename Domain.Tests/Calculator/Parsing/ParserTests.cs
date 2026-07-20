@@ -335,4 +335,89 @@ public class ParserTests
 
         ast.Should().BeOfType<CallExpression>();
     }
+
+    // ---- Chained calls: f(2)(3) ----
+
+    [Fact]
+    public void Parse_OrdinaryCall_StaysACallExpression_NotWrappedInInvoke()
+    {
+        var ast = _parser.Parse("sqrt(abs(-4))");
+
+        ast.Should().BeOfType<CallExpression>();
+        ((CallExpression)ast).Arguments[0].Should().BeOfType<CallExpression>();
+    }
+
+    [Fact]
+    public void Parse_SecondParenAfterACall_ProducesInvokeExpressionWrappingTheCall()
+    {
+        var ast = _parser.Parse("f(2)(3)");
+
+        ast.Should().BeOfType<InvokeExpression>();
+        var invoke = (InvokeExpression)ast;
+        invoke.Target.Should().BeOfType<CallExpression>();
+        ((CallExpression)invoke.Target).Name.Should().Be("f");
+        invoke.Arguments.Should().ContainSingle();
+    }
+
+    [Fact]
+    public void Evaluate_ChainedCall_InvokesTheFunctionValueReturnedByTheFirstCall()
+    {
+        var context = new VariableContext();
+        Evaluate("g(y) := y + 1", context);
+        Evaluate("f(x) := g", context); // f ignores its argument and returns g itself
+
+        EvaluateNumber("f(2)(3)", context).Should().BeApproximately(4, 1e-10);
+    }
+
+    [Fact]
+    public void Evaluate_ChainOfThreeCalls_InvokesEachReturnedFunctionInTurn()
+    {
+        var context = new VariableContext();
+        Evaluate("h(z) := z * 10", context);
+        Evaluate("g(y) := h", context);
+        Evaluate("f(x) := g", context);
+
+        EvaluateNumber("f(1)(2)(3)", context).Should().BeApproximately(30, 1e-10);
+    }
+
+    [Fact]
+    public void Evaluate_InvokingANonFunctionValue_ThrowsMentioningTheActualType()
+    {
+        var context = new VariableContext();
+        Evaluate("f(x) := x + 1", context); // f(2) is a plain number, not invokable
+
+        var act = () => Evaluate("f(2)(3)", context);
+
+        act.Should().Throw<InvalidOperationException>().WithMessage("*annot invoke*number*");
+    }
+
+    [Fact]
+    public void Evaluate_ChainedCallFollowedByFactorial_AppliesInvocationBeforePostfix()
+    {
+        var context = new VariableContext();
+        Evaluate("g(y) := y", context);
+        Evaluate("f(x) := g", context);
+
+        // f(1)(4)! must read as ((f(1))(4))! = 4! = 24, not some other grouping.
+        EvaluateNumber("f(1)(4)!", context).Should().BeApproximately(24, 1e-10);
+    }
+
+    [Fact]
+    public void Evaluate_SpecialFormResultFollowedByInvocation_InvokesTheChosenBranch()
+    {
+        var context = new VariableContext();
+        Evaluate("g(y) := y * 2", context);
+
+        EvaluateNumber("if(1 < 2, g, g)(5)", context).Should().BeApproximately(10, 1e-10);
+    }
+
+    [Fact]
+    public void Evaluate_SpecialFormResultFollowedByInvocation_NonFunctionBranchThrows()
+    {
+        var context = new VariableContext();
+
+        var act = () => Evaluate("if(1 < 2, 1, 2)(5)", context);
+
+        act.Should().Throw<InvalidOperationException>().WithMessage("*annot invoke*number*");
+    }
 }
