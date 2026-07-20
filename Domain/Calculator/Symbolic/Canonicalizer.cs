@@ -174,6 +174,20 @@ public static class Canonicalizer
         if (baseExpr is Power inner && inner.Exponent is Number innerExponent && exponent is Number outerExponent)
             return BuildPower(inner.Base, new Number(innerExponent.Value * outerExponent.Value));
 
+        // (f1*f2*...)^n -> f1^n * f2^n * ...: distributing over a product's factors is what
+        // unifies "a/(b*c)" and "a/b/c" onto the same tree (n = -1 in that case). Only for
+        // an INTEGER n. A fractional exponent is unsound in general once factors can be
+        // negative — (-4*-9)^(1/2) = 6, but (-4)^(1/2)*(-9)^(1/2) isn't defined over the
+        // reals — and a symbolic exponent's sign/integrality is simply unknown, so neither
+        // is distributed. Re-canonicalizing the freshly built product lets it flatten into
+        // its parent and merge with any like powers already there (e.g. (x*x)^2 -> x^2*x^2
+        // -> x^4), rather than stopping at the intermediate distributed-but-unmerged form.
+        if (baseExpr is Product product && exponent is Number distributiveExponent && distributiveExponent.Value.IsInteger)
+        {
+            var distributed = new Product(product.Factors.Select(f => (SymbolicExpression)new Power(f, exponent)).ToList());
+            return CanonicalizeOnce(distributed);
+        }
+
         return BuildPower(baseExpr, exponent);
     }
 

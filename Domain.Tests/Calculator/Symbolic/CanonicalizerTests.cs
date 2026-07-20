@@ -200,6 +200,131 @@ public class CanonicalizerTests
         ((Product)result).Factors.Should().HaveCount(2);
     }
 
+    // --- Distributing an integer power over a product's factors ---
+
+    [Fact]
+    public void Distribute_ReciprocalOfCompoundBase_MatchesChainedDivision()
+    {
+        // The test that motivates the whole rule: a/(b*c) and a/b/c must canonicalize to
+        // the structurally identical tree, not merely an equal value.
+        var reciprocalOfProduct = new Product(new SymbolicExpression[]
+        {
+            X,
+            new Power(new Product(new SymbolicExpression[] { Y, new Symbol("z") }), new Number(new Rational(-1))),
+        });
+        var chainedDivision = new Product(new SymbolicExpression[]
+        {
+            X,
+            new Power(Y, new Number(new Rational(-1))),
+            new Power(new Symbol("z"), new Number(new Rational(-1))),
+        });
+
+        C(reciprocalOfProduct).Should().Be(C(chainedDivision));
+    }
+
+    [Fact]
+    public void Distribute_SquareOfProduct_DistributesToEachFactor()
+    {
+        var expr = new Power(new Product(new SymbolicExpression[] { X, Y }), N(2));
+
+        C(expr).Should().Be(new Product(new SymbolicExpression[] { new Power(X, N(2)), new Power(Y, N(2)) }));
+    }
+
+    [Fact]
+    public void Distribute_FractionalExponentOfProduct_IsNotDistributed()
+    {
+        // (x*y)^(1/2) must NOT become x^(1/2) * y^(1/2): with negative factors that would
+        // change the value (branch-cut issue), so it is never attempted, even for factors
+        // that happen to be positive.
+        var expr = new Power(new Product(new SymbolicExpression[] { X, Y }), new Number(new Rational(1, 2)));
+
+        var result = C(expr);
+        result.Should().BeOfType<Power>();
+        ((Power)result).Base.Should().Be(new Product(new SymbolicExpression[] { X, Y }));
+    }
+
+    [Fact]
+    public void Distribute_SymbolicExponentOfProduct_IsNotDistributed()
+    {
+        var n = new Symbol("n");
+        var expr = new Power(new Product(new SymbolicExpression[] { X, Y }), n);
+
+        var result = C(expr);
+        result.Should().BeOfType<Power>();
+        ((Power)result).Base.Should().Be(new Product(new SymbolicExpression[] { X, Y }));
+        ((Power)result).Exponent.Should().Be(n);
+    }
+
+    [Fact]
+    public void Distribute_SquareOfXTimesX_DistributesThenMergesToXFourth()
+    {
+        // Distribution alone gives x^2 * x^2; merging must then collapse that to x^4 rather
+        // than leaving the intermediate two-factor form as the fixed point.
+        var expr = new Power(new Product(new SymbolicExpression[] { X, X }), N(2));
+
+        C(expr).Should().Be(new Power(X, N(4)));
+    }
+
+    [Fact]
+    public void Distribute_ReciprocalOfThreeFactorProduct_GivesThreeSeparatePowers()
+    {
+        var expr = new Power(new Product(new SymbolicExpression[] { X, Y, new Symbol("z") }), new Number(new Rational(-1)));
+
+        var result = C(expr);
+        result.Should().BeOfType<Product>();
+        var factors = ((Product)result).Factors;
+        factors.Should().HaveCount(3);
+        foreach (var factor in factors)
+        {
+            factor.Should().BeOfType<Power>();
+            ((Power)factor).Exponent.Should().Be(new Number(new Rational(-1)));
+        }
+    }
+
+    [Fact]
+    public void Distribute_NegativeIntegerExponentOtherThanMinusOne_DistributesToEachFactor()
+    {
+        var expr = new Power(new Product(new SymbolicExpression[] { X, Y }), new Number(new Rational(-3)));
+
+        C(expr).Should().Be(new Product(new SymbolicExpression[]
+        {
+            new Power(X, new Number(new Rational(-3))),
+            new Power(Y, new Number(new Rational(-3))),
+        }));
+    }
+
+    [Fact]
+    public void Distribute_NestedPowerOfDistributedProduct_FullyMergesExponents()
+    {
+        // ((x*y)^2)^3 -> x^6 * y^6.
+        var expr = new Power(new Power(new Product(new SymbolicExpression[] { X, Y }), N(2)), N(3));
+
+        C(expr).Should().Be(new Product(new SymbolicExpression[] { new Power(X, N(6)), new Power(Y, N(6)) }));
+    }
+
+    [Fact]
+    public void Distribute_Idempotence_CanonicalizingTwiceGivesSameResult()
+    {
+        var expr = new Power(new Product(new SymbolicExpression[] { X, Y }), new Number(new Rational(-1)));
+
+        var once = C(expr);
+        var twice = Canonicalizer.Canonicalize(once);
+
+        twice.Should().Be(once);
+    }
+
+    [Fact]
+    public void Distribute_DeeplyNestedPowerOfProduct_DoesNotTriggerIterationGuard()
+    {
+        SymbolicExpression expr = new Product(new SymbolicExpression[] { X, Y });
+        for (var i = 0; i < 30; i++)
+            expr = new Power(expr, N(2));
+
+        var act = () => C(expr);
+
+        act.Should().NotThrow();
+    }
+
     // --- Sorting / commutative equality ---
 
     [Fact]
