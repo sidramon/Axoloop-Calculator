@@ -10,6 +10,7 @@ using Domain.Calculator.Operations.Functions.Scalar;
 using Domain.Calculator.Operations.SpecialForms;
 using Domain.Calculator.Values;
 using FluentAssertions;
+using Value = Domain.Calculator.Values.Value;
 
 public class PlotFunctionUseCaseTests
 {
@@ -158,5 +159,27 @@ public class PlotFunctionUseCaseTests
         var act = () => UseCase.Sample(function, 5, -5, new PlotSampleRequest(SampleCount: 10));
 
         act.Should().Throw<InvalidOperationException>();
+    }
+
+    [Fact]
+    public void Sample_DerivativeOfCubicFunction_MatchesAnalyticDerivativeAtEveryPoint()
+    {
+        // Verifies the case that motivates deriv(f) returning a FunctionValue at all:
+        // plotting a derivative without a name registered in FunctionContext.
+        var (evaluator, functions, globals) = CreateHarness();
+        DefineFunction(functions, "f", "x", new BinaryExpression(
+            new IdentifierExpression("x"), new PowerOperator(), new NumberExpression(new NumberValue(3))));
+        var f = Resolve(evaluator, globals, "f");
+
+        var derivative = (FunctionValue)new DerivativeFunction().Apply(new Value[] { f });
+
+        var series = UseCase.Sample(derivative, -3, 3, new PlotSampleRequest(SampleCount: 25));
+
+        series.Points.Should().OnlyContain(p => p.Y.HasValue);
+        foreach (var point in series.Points)
+        {
+            var analytic = 3 * point.X * point.X; // d/dx x^3 = 3x^2
+            point.Y!.Value.Should().BeApproximately(analytic, 1e-3);
+        }
     }
 }

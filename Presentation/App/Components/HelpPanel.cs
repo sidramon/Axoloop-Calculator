@@ -20,11 +20,11 @@ public static class HelpPanel
         table.AddRow("[cyan]/functions <category>[/]", "List builtin functions in one category");
         table.AddRow("[cyan]/operators[/]",         "List all operators with precedence and associativity");
         table.AddRow("[cyan]/doc[/]",               "Open the full documentation in a browser");
-        table.AddRow("[cyan]/plot <fn>[/]",         "Plot a user-defined function as ASCII, domain [[-10, 10]]");
-        table.AddRow("[cyan]/plot <fn> <lo> <hi>[/]", "Plot with an explicit domain");
-        table.AddRow("[cyan]/plotweb <fn> [[lo hi]][/]", "Open an interactive plot in the browser");
-        table.AddRow("[cyan]/zeros <fn> [[lo hi]][/]",  "List the zeros of a function without plotting");
-        table.AddRow("[cyan]/extrema <fn> [[lo hi]][/]", "List local maxima/minima without plotting");
+        table.AddRow("[cyan]/plot <expr>[/]",       "Plot a function-valued expression as ASCII, domain [[-10, 10]]");
+        table.AddRow("[cyan]/plot <expr> <lo> <hi>[/]", "Plot with an explicit domain");
+        table.AddRow("[cyan]/plotweb <expr> [[lo hi]][/]", "Open an interactive plot in the browser");
+        table.AddRow("[cyan]/zeros <expr> [[lo hi]][/]",  "List the zeros of a function without plotting");
+        table.AddRow("[cyan]/extrema <expr> [[lo hi]][/]", "List local maxima/minima without plotting");
         table.AddRow("[cyan]/clear[/]",             "Clear the screen");
         table.AddRow("[cyan]exit[/]",               "Quit the calculator");
 
@@ -33,6 +33,7 @@ public static class HelpPanel
         table.AddRow("[green]1 + 1[/]",          "Evaluate an expression");
         table.AddRow("[green]a := [[1,2;3,4]][/]", "Assign a matrix to a variable");
         table.AddRow("[green]a * 2[/]",           "Use a variable in an expression");
+        table.AddRow("[green]/plot deriv(f) -10 10[/]", "<expr> can be any function-valued expression, not just a name");
 
         var panel = new Panel(table)
         {

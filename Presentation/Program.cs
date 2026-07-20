@@ -77,6 +77,13 @@ var functions = new IFunction[]
     new LinSolveGeneralFunction(),
     new RrefFunction(),
     new NullSpaceFunction(),
+    new DerivFunction(),
+    new DerivativeFunction(),
+    new NthDerivativeFunction(),
+    new IntegralFunction(),
+    new AntiderivativeFunction(),
+    new AntiderivativeFunction(hasExplicitBasePoint: true),
+    new PlotFunction(),
 };
 
 var specialForms = new ISpecialForm[]

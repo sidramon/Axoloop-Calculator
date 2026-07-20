@@ -57,6 +57,13 @@ public static class EvaluatorFactory
         new LinSolveGeneralFunction(),
         new RrefFunction(),
         new NullSpaceFunction(),
+        new DerivFunction(),
+        new DerivativeFunction(),
+        new NthDerivativeFunction(),
+        new IntegralFunction(),
+        new AntiderivativeFunction(),
+        new AntiderivativeFunction(hasExplicitBasePoint: true),
+        new PlotFunction(),
     };
 
     public static IReadOnlyList<ISpecialForm> SpecialForms() => new ISpecialForm[]
