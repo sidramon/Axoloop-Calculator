@@ -11,8 +11,8 @@ public sealed class DeterminantFunction : IFunction
     public string Signature => "det(m)";
 
     public string Description =>
-        "Determinant, computed by cofactor expansion (recursive). O(n!) cost: reserve for " +
-        "small matrices — the computation becomes impractical beyond about a dozen rows. " +
+        "Determinant, computed by LU decomposition with partial pivoting. O(n^3) cost, so " +
+        "it scales well past a dozen rows, unlike a cofactor-expansion implementation. " +
         "Requires a square matrix.";
 
     public IReadOnlyList<string> Examples => new[]

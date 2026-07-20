@@ -152,10 +152,8 @@ return a callable antiderivative that reruns a full quadrature on every
 invocation, so sampling it at many points (e.g. for a plot) is proportionally
 expensive. No complex numbers, so `eigvals` refuses matrices with complex
 eigenvalues and `sqrt(-1)` is an error; `eigvecs` goes further still and only
-supports symmetric matrices. `det` uses cofactor expansion — `O(n!)` — which is
-fine for hand-typed matrices and unusable beyond roughly 10×10. The web plot
-zooms over pre-computed samples, so it cannot resolve detail past the sampled
-domain.
+supports symmetric matrices. The web plot zooms over pre-computed samples, so
+it cannot resolve detail past the sampled domain.
 
 ## Contributing
 
@@ -174,8 +172,10 @@ A few things that would be genuinely useful:
   fallback) already exists in `Domain/Calculator/Algorithms`, built originally
   for the since-removed `fsolve`; it has no caller today but is a reasonable
   starting point for a `lim` function
-- **Faster determinant** — cofactor expansion is `O(n!)`; an LU-based approach
-  would scale well past 10×10
+- **LU-based `inverse`/`linsolve`** — `det` now factors via LU with partial
+  pivoting (`Algorithms/LuDecomposition.cs`); `inverse` and `linsolve` still use
+  full Gauss-Jordan elimination and could reuse the same factorization with
+  forward/back substitution
 - **Statistics** — descriptive functions and distributions
 - **More renderers** — PNG output, or a web front-end reusing the existing use cases
 
