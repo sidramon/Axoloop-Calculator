@@ -34,6 +34,33 @@ Axoloop> ndiff(f)(3)
 Axoloop> /plotweb ndiff(f) -10 10
 ```
 
+## Screenshots
+
+**Welcome and help** — a real REPL session, `/help` output included as-is.
+
+![Welcome banner and help panel](docs/screenshots/01-welcome-help.png)
+
+**Scientific calculator** — defining a function, solving an equation, and an
+exact symbolic derivative in the same session.
+
+![Scientific calculator commands](docs/screenshots/02-scientific.png)
+
+**Linear algebra** — a matrix, its inverse, and the product collapsing back to
+the identity matrix.
+
+![Matrix, inverse, and identity check](docs/screenshots/03-linear-algebra.png)
+
+**Built-in documentation** — `/help solve` pulling the full signature,
+description and examples straight from the same source that feeds `/functions`
+and the generated web reference.
+
+![/help solve documentation panel](docs/screenshots/04-help-solve.png)
+
+**Interactive plotting** — `/plotweb` opens a zoomable HTML view with detected
+zeros and local extrema marked directly on the curve.
+
+![Interactive plot with zero and extrema markers](docs/screenshots/05-plot.png)
+
 ## Features
 
 **Expressions** — full precedence with right-associative exponentiation, unary
