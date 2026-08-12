@@ -67,8 +67,21 @@ zeros and local extrema marked directly on the curve.
 minus, postfix factorial, parentheses. Comparison and logical operators with
 short-circuit evaluation.
 
-**Values** — reals, booleans and matrices in a single polymorphic type system.
-Variables persist across the session; mathematical constants are write-protected.
+**Values** — reals, complex numbers, booleans and matrices in a single polymorphic
+type system. Variables persist across the session; mathematical constants are
+write-protected.
+
+**Complex numbers** — the imaginary unit `_i`, with `+ - * / ^` promoting a real
+operand to complex automatically (`2 + 3*_i`), and a genuinely complex result
+collapsing back to a real `NumberValue` the moment its imaginary part vanishes
+(`_i^2` is the real `-1`, not `-1 + 0i`). `sqrt`, `nthroot` and `ln` return a
+complex result for arguments outside their old real domain instead of throwing;
+`eigvals` returns a complex conjugate pair for a 2×2 matrix with no real
+eigenvalues. `<`, `>`, `<=` and `>=` reject any operand with a non-negligible
+imaginary part — complex numbers aren't ordered — while `=` compares both
+components. `abs`, `real`, `imag`, `conj` and `arg` round out the type. Complex
+numbers live in evaluation only, not the symbolic layer: `diff` treats `_i` as
+an ordinary free symbol rather than the imaginary unit.
 
 **User-defined functions** — `y(x) := 2*x + 5`, including recursion with `if`.
 Functions are first-class values: a bare name like `y` evaluates to a callable,
@@ -179,10 +192,19 @@ amplify rounding error, which is also why orders above 4 are rejected outright.
 `integral(f)` and `integral(f, a)`
 return a callable antiderivative that reruns a full quadrature on every
 invocation, so sampling it at many points (e.g. for a plot) is proportionally
-expensive. No complex numbers, so `eigvals` refuses matrices with complex
-eigenvalues and `sqrt(-1)` is an error; `eigvecs` goes further still and only
-supports symmetric matrices. The web plot zooms over pre-computed samples, so
-it cannot resolve detail past the sampled domain.
+expensive. Complex numbers exist only in evaluation, not the symbolic layer —
+`diff(_i * x, x)` treats `_i` as a free symbol, not the imaginary unit.
+`eigvals` only extracts complex eigenvalues for a 2×2 matrix (closed-form
+quadratic formula); a larger matrix with complex eigenvalues still throws,
+since reading them off the QR iteration would need a real Schur form rather
+than the current "scalars on the diagonal" assumption. `eigvecs` goes further
+still and only supports symmetric (always-real-eigenvalue) matrices. A
+function that goes complex partway across a plotted or solved domain (e.g.
+`solve` or `/plotweb` on an expression involving `_i`) is treated the same as
+one that throws there: that part of the domain is silently skipped rather than
+plotted or searched, which can read as "no root found" when the real reason is
+"the expression isn't real-valued there." The web plot zooms over pre-computed
+samples, so it cannot resolve detail past the sampled domain.
 
 ## Contributing
 
@@ -193,8 +215,12 @@ worth having.
 
 A few things that would be genuinely useful:
 
-- **Complex numbers** — the largest missing piece, and the one that unblocks
-  several others, including `eigvecs` on non-symmetric matrices
+- **Symbolic complex numbers** — `_i` is complex in evaluation but an ordinary
+  free symbol in `diff`; teaching the symbolic layer about the imaginary unit
+  is open
+- **General complex eigenvalues** — `eigvals` handles a 2×2 matrix directly;
+  extracting complex eigenvalues from the QR iteration for larger matrices
+  needs a real Schur form, and `eigvecs` still only supports symmetric matrices
 - **Wider symbolic layer** — `diff` covers exact differentiation; factoring and
   exact equation solving are still open, and `solve`/`integral` remain
   numeric-only

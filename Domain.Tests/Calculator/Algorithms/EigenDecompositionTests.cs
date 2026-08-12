@@ -108,6 +108,37 @@ public class EigenDecompositionTests
     }
 
     [Fact]
+    public void TwoByTwoComplexPair_RotationMatrix_ReturnsImaginaryUnitConjugatePair()
+    {
+        // Eigenvalues of [[0,-1],[1,0]] are ±i.
+        var m = Of(new double[,] { { 0, -1 }, { 1, 0 } });
+
+        var pair = EigenDecomposition.TwoByTwoComplexPair(m);
+
+        pair.Should().NotBeNull();
+        pair!.Value.First.Real.Should().BeApproximately(0, 1e-9);
+        pair.Value.First.Imaginary.Should().BeApproximately(1, 1e-9);
+        pair.Value.Second.Real.Should().BeApproximately(0, 1e-9);
+        pair.Value.Second.Imaginary.Should().BeApproximately(-1, 1e-9);
+    }
+
+    [Fact]
+    public void TwoByTwoComplexPair_RealEigenvalueMatrix_ReturnsNull()
+    {
+        var m = Of(new double[,] { { 4, 1 }, { 2, 3 } });
+
+        EigenDecomposition.TwoByTwoComplexPair(m).Should().BeNull();
+    }
+
+    [Fact]
+    public void TwoByTwoComplexPair_NonTwoByTwoMatrix_ReturnsNull()
+    {
+        var m = Of(new double[,] { { 2, 0, 0 }, { 0, 5, 0 }, { 0, 0, 1 } });
+
+        EigenDecomposition.TwoByTwoComplexPair(m).Should().BeNull();
+    }
+
+    [Fact]
     public void General_TwentyByTwentyMatrix_CompletesQuickly()
     {
         // Diagonally dominant with a mild asymmetric perturbation, so it's real-diagonalizable

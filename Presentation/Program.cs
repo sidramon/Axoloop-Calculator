@@ -6,6 +6,7 @@ using Application.Views;
 using Domain.Calculator;
 using Domain.Calculator.Operations;
 using Domain.Calculator.Operations.Functions;
+using Domain.Calculator.Operations.Functions.Complex;
 using Domain.Calculator.Operations.Functions.Matrix;
 using Domain.Calculator.Operations.Functions.Matrix.Eigen;
 using Domain.Calculator.Operations.Functions.Scalar;
@@ -85,6 +86,10 @@ var functions = new IFunction[]
     new AntiderivativeFunction(),
     new AntiderivativeFunction(hasExplicitBasePoint: true),
     new PlotFunction(),
+    new RealPartFunction(),
+    new ImaginaryPartFunction(),
+    new ConjugateFunction(),
+    new ArgumentFunction(),
 };
 
 var functionContext = new FunctionContext();

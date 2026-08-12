@@ -2,6 +2,7 @@ namespace Domain.Tests.Calculator.TestHelpers;
 
 using Domain.Calculator;
 using Domain.Calculator.Operations.Functions;
+using Domain.Calculator.Operations.Functions.Complex;
 using Domain.Calculator.Operations.Functions.Matrix;
 using Domain.Calculator.Operations.Functions.Matrix.Eigen;
 using Domain.Calculator.Operations.Functions.Scalar;
@@ -65,6 +66,10 @@ public static class EvaluatorFactory
         new AntiderivativeFunction(),
         new AntiderivativeFunction(hasExplicitBasePoint: true),
         new PlotFunction(),
+        new RealPartFunction(),
+        new ImaginaryPartFunction(),
+        new ConjugateFunction(),
+        new ArgumentFunction(),
     };
 
     public static IReadOnlyList<ISpecialForm> SpecialForms(FunctionContext? functionContext = null)

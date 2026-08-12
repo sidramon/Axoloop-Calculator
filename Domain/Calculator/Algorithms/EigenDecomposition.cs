@@ -1,3 +1,4 @@
+using System.Numerics;
 using Domain.Calculator.Values;
 
 namespace Domain.Calculator.Algorithms;
@@ -6,6 +7,37 @@ public static class EigenDecomposition
 {
     private const int MaxSweeps = 100;
     private const int MaxIterations = 500;
+
+    /// <summary>
+    /// Eigenvalues of a 2x2 matrix as a complex conjugate pair, computed directly from the
+    /// closed-form quadratic formula — no QR iteration involved, so it's independent of
+    /// <see cref="General"/>. Returns null when the matrix isn't exactly 2x2 or its
+    /// eigenvalues are real; callers should fall back to <see cref="General"/> in that case,
+    /// which still handles every real case (2x2 included) exactly as before.
+    ///
+    /// Complex eigenvalues of larger matrices are NOT supported: <see cref="General"/>
+    /// still throws when QR deflation encounters a complex pair mid-reduction. Extracting
+    /// those would need the eigenvalues read off a real Schur form's 2x2 diagonal blocks
+    /// rather than assumed to be scalars on the diagonal, which is a larger change than
+    /// this task's scope.
+    /// </summary>
+    public static (Complex First, Complex Second)? TwoByTwoComplexPair(MatrixValue matrix)
+    {
+        if (matrix.Rows != 2 || matrix.Columns != 2) return null;
+
+        var p = matrix[0, 0];
+        var q = matrix[0, 1];
+        var r = matrix[1, 0];
+        var s = matrix[1, 1];
+
+        var trace = p + s;
+        var discriminant = trace * trace / 4 - (p * s - q * r);
+        if (discriminant >= -MatrixArrays.Tolerance) return null;
+
+        var real = trace / 2;
+        var imaginary = Math.Sqrt(-discriminant);
+        return (new Complex(real, imaginary), new Complex(real, -imaginary));
+    }
 
     public static bool IsSymmetric(MatrixValue matrix)
     {

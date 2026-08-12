@@ -10,19 +10,21 @@ public sealed class AbsFunction : IFunction
     public string Signature => "abs(x)";
 
     public string Description =>
-        "Absolute value of a number. Works on scalars only: there is no element-wise " +
-        "variant for matrices.";
+        "Absolute value of a real number, or the modulus |a+bi| = sqrt(a^2+b^2) of a " +
+        "complex one — the same notion of \"distance from zero\", specialized per type. " +
+        "Works on scalars only: there is no element-wise variant for matrices.";
 
     public IReadOnlyList<string> Examples => new[]
     {
         "abs(-5) → 5",
         "abs(5) → 5",
+        "abs(3 + 4*_i) → 5",
     };
 
-    public Value Apply(IReadOnlyList<Value> arguments)
+    public Value Apply(IReadOnlyList<Value> arguments) => arguments[0] switch
     {
-        if (arguments[0] is not NumberValue n)
-            throw new InvalidOperationException("abs requires a number.");
-        return new NumberValue(Math.Abs(n.Number));
-    }
+        NumberValue n => new NumberValue(Math.Abs(n.Number)),
+        ComplexValue c => new NumberValue(c.Modulus()),
+        _ => throw new InvalidOperationException("abs requires a number.")
+    };
 }

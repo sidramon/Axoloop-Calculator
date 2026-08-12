@@ -155,6 +155,7 @@ public sealed class Evaluator
     private static string TypeName(Value value) => value switch
     {
         NumberValue   => "number",
+        ComplexValue  => "complex",
         BooleanValue  => "boolean",
         MatrixValue   => "matrix",
         SolutionValue => "solution",

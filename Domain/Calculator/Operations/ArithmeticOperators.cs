@@ -1,5 +1,6 @@
 namespace Domain.Calculator.Operations;
 
+using System.Numerics;
 using Domain.Calculator.Values;
 
 public sealed class AddOperator : IOperator
@@ -44,6 +45,8 @@ public sealed class ModuloOperator : IOperator
         (NumberValue a, NumberValue b) => b.Number == 0
             ? throw new DivideByZeroException("Modulo by zero.")
             : new NumberValue(a.Number % b.Number),
+        (ComplexValue, _) or (_, ComplexValue) =>
+            throw new InvalidOperationException("Modulo is not defined for complex numbers."),
         _ => throw new InvalidOperationException("Modulo requires numbers.")
     };
 }
@@ -56,6 +59,8 @@ public sealed class PowerOperator : IOperator
     public Value Apply(Value left, Value right) => (left, right) switch
     {
         (NumberValue a, NumberValue b) => new NumberValue(Math.Pow(a.Number, b.Number)),
+        _ when ValueArithmetic.TryToComplex(left, out var a) && ValueArithmetic.TryToComplex(right, out var b)
+            => ComplexValue.Of(Complex.Pow(a, b)),
         _ => throw new InvalidOperationException("Power requires numbers.")
     };
 }

@@ -141,4 +141,101 @@ public class NumberFormatterTests
         hint.Should().Contain("63");
         hint.Should().Contain("10");
     }
+
+    // ---- Complex formatting ----
+
+    [Fact]
+    public void Format_ComplexPositiveImaginary_RendersPlusSign()
+    {
+        var formatter = new NumberFormatter(FormatOptions.Default);
+
+        formatter.Format(new Domain.Calculator.Values.ComplexValue(3, 2)).Should().Be("3 + 2i");
+    }
+
+    [Fact]
+    public void Format_ComplexNegativeImaginary_RendersMinusSignNotPlusMinus()
+    {
+        var formatter = new NumberFormatter(FormatOptions.Default);
+
+        formatter.Format(new Domain.Calculator.Values.ComplexValue(3, -2)).Should().Be("3 - 2i");
+    }
+
+    [Fact]
+    public void Format_ComplexZeroRealPart_OmitsRealPart()
+    {
+        var formatter = new NumberFormatter(FormatOptions.Default);
+
+        formatter.Format(new Domain.Calculator.Values.ComplexValue(0, 2)).Should().Be("2i");
+    }
+
+    [Fact]
+    public void Format_ComplexZeroRealPartNegativeImaginary_OmitsRealPart()
+    {
+        var formatter = new NumberFormatter(FormatOptions.Default);
+
+        formatter.Format(new Domain.Calculator.Values.ComplexValue(0, -2)).Should().Be("-2i");
+    }
+
+    [Fact]
+    public void Format_ComplexUnitImaginary_RendersBareI()
+    {
+        var formatter = new NumberFormatter(FormatOptions.Default);
+
+        formatter.Format(new Domain.Calculator.Values.ComplexValue(0, 1)).Should().Be("i");
+    }
+
+    [Fact]
+    public void Format_ComplexNegativeUnitImaginary_RendersBareNegativeI()
+    {
+        var formatter = new NumberFormatter(FormatOptions.Default);
+
+        formatter.Format(new Domain.Calculator.Values.ComplexValue(0, -1)).Should().Be("-i");
+    }
+
+    [Fact]
+    public void Format_ComplexUnitImaginaryWithRealPart_OmitsMagnitudeOne()
+    {
+        var formatter = new NumberFormatter(FormatOptions.Default);
+
+        formatter.Format(new Domain.Calculator.Values.ComplexValue(5, 1)).Should().Be("5 + i");
+    }
+
+    [Fact]
+    public void Format_ComplexNegativeUnitImaginaryWithRealPart_OmitsMagnitudeOne()
+    {
+        var formatter = new NumberFormatter(FormatOptions.Default);
+
+        formatter.Format(new Domain.Calculator.Values.ComplexValue(5, -1)).Should().Be("5 - i");
+    }
+
+    [Fact]
+    public void Format_ComplexNegligibleImaginaryPart_FallsBackToRealTextDefensively()
+    {
+        // Construction always reduces this to a NumberValue in practice — this exercises the
+        // formatter's own defensive branch directly, bypassing ComplexValue.Of.
+        var formatter = new NumberFormatter(FormatOptions.Default);
+
+        formatter.Format(new Domain.Calculator.Values.ComplexValue(3, 0)).Should().Be("3");
+    }
+
+    [Fact]
+    public void Format_RealNumberValue_UnaffectedByComplexFormattingPath()
+    {
+        var formatter = new NumberFormatter(FormatOptions.Default);
+
+        formatter.Format(new Domain.Calculator.Values.NumberValue(-7.5)).Should().Be("-7.5");
+    }
+
+    [Fact]
+    public void Format_ValueListOfComplexAndReal_RendersBracketedCommaList()
+    {
+        var formatter = new NumberFormatter(FormatOptions.Default);
+        var list = new Domain.Calculator.Values.ValueListValue(new Domain.Calculator.Values.Value[]
+        {
+            new Domain.Calculator.Values.ComplexValue(0, 1),
+            new Domain.Calculator.Values.ComplexValue(0, -1),
+        });
+
+        formatter.Format(list).Should().Be("[i, -i]");
+    }
 }

@@ -12,5 +12,6 @@ public static class Constants
         ["_phi"] = new NumberValue((1 + Math.Sqrt(5)) / 2),
         ["_inf"] = new NumberValue(double.PositiveInfinity),
         ["_nan"] = new NumberValue(double.NaN),
+        ["_i"]   = new ComplexValue(0, 1),
     };
 }

@@ -18,11 +18,22 @@ public class ScalarFunctionTests
     }
 
     [Fact]
-    public void Sqrt_NegativeNumber_Throws()
+    public void Sqrt_NegativeNumber_ReturnsComplexResult()
     {
-        var act = () => new SqrtFunction().Apply(new Value[] { new NumberValue(-1) });
+        // Changed behavior: previously threw. sqrt(-1) = i is now a legitimate complex result.
+        var result = (ComplexValue)new SqrtFunction().Apply(new Value[] { new NumberValue(-1) });
 
-        act.Should().Throw<InvalidOperationException>();
+        result.Real.Should().BeApproximately(0, 1e-10);
+        result.Imaginary.Should().BeApproximately(1, 1e-10);
+    }
+
+    [Fact]
+    public void Sqrt_NegativeFour_ReturnsTwoI()
+    {
+        var result = (ComplexValue)new SqrtFunction().Apply(new Value[] { new NumberValue(-4) });
+
+        result.Real.Should().BeApproximately(0, 1e-10);
+        result.Imaginary.Should().BeApproximately(2, 1e-10);
     }
 
     [Fact]
@@ -52,11 +63,13 @@ public class ScalarFunctionTests
     }
 
     [Fact]
-    public void NthRoot_NegativeRadicandWithEvenDegree_Throws()
+    public void NthRoot_NegativeRadicandWithEvenDegree_ReturnsComplexResult()
     {
-        var act = () => new NthRootFunction().Apply(new Value[] { new NumberValue(-8), new NumberValue(2) });
+        // Changed behavior: previously threw. nthroot(-8, 2) = sqrt(-8) is now a complex result.
+        var result = (ComplexValue)new NthRootFunction().Apply(new Value[] { new NumberValue(-8), new NumberValue(2) });
 
-        act.Should().Throw<InvalidOperationException>();
+        result.Real.Should().BeApproximately(0, 1e-9);
+        result.Imaginary.Should().BeApproximately(Math.Sqrt(8), 1e-9);
     }
 
     [Fact]
@@ -85,6 +98,16 @@ public class ScalarFunctionTests
         act.Should().Throw<InvalidOperationException>();
     }
 
+    [Fact]
+    public void Pow_ComplexExponent_MatchesPowerOperator()
+    {
+        var result = (ComplexValue)new PowFunction().Apply(
+            new Value[] { new NumberValue(2), new ComplexValue(0, 1) });
+
+        result.Real.Should().BeApproximately(0.7692389, 1e-6);
+        result.Imaginary.Should().BeApproximately(0.6389613, 1e-6);
+    }
+
     // ---- Ln ----
 
     [Fact]
@@ -104,9 +127,20 @@ public class ScalarFunctionTests
     }
 
     [Fact]
-    public void Ln_NegativeNumber_Throws()
+    public void Ln_NegativeNumber_ReturnsComplexResult()
     {
-        var act = () => new LnFunction().Apply(new Value[] { new NumberValue(-1) });
+        // Changed behavior: previously threw. ln(-1) = pi*i is now a legitimate complex result.
+        var result = (ComplexValue)new LnFunction().Apply(new Value[] { new NumberValue(-1) });
+
+        result.Real.Should().BeApproximately(0, 1e-10);
+        result.Imaginary.Should().BeApproximately(Math.PI, 1e-10);
+    }
+
+    [Fact]
+    public void Ln_Zero_StillThrows()
+    {
+        // Unlike a negative argument, there is no complex value to fall back to at zero.
+        var act = () => new LnFunction().Apply(new Value[] { new NumberValue(0) });
 
         act.Should().Throw<InvalidOperationException>();
     }
@@ -164,6 +198,14 @@ public class ScalarFunctionTests
         var act = () => new AbsFunction().Apply(new Value[] { new BooleanValue(false) });
 
         act.Should().Throw<InvalidOperationException>();
+    }
+
+    [Fact]
+    public void Abs_ComplexNumber_ReturnsModulusNotAbsoluteValue()
+    {
+        var result = (NumberValue)new AbsFunction().Apply(new Value[] { new ComplexValue(3, 4) });
+
+        result.Number.Should().BeApproximately(5, 1e-10);
     }
 
     // ---- Ndiff ----

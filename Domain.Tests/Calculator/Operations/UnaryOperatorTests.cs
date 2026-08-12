@@ -35,6 +35,15 @@ public class UnaryOperatorTests
         act.Should().Throw<InvalidOperationException>();
     }
 
+    [Fact]
+    public void Negate_Complex_NegatesBothComponents()
+    {
+        var result = (ComplexValue)new NegateOperator().Apply(new ComplexValue(2, -3));
+
+        result.Real.Should().BeApproximately(-2, 1e-10);
+        result.Imaginary.Should().BeApproximately(3, 1e-10);
+    }
+
     // ---- Factorial ----
 
     [Theory]
