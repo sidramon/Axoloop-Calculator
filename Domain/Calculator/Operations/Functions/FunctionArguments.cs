@@ -20,6 +20,10 @@ internal static class FunctionArguments
         return m;
     }
 
+    /// <summary>A 1xN or Nx1 matrix argument, unwrapped to its underlying array via <see cref="MatrixValue.AsVector"/>.</summary>
+    public static double[] RequireVector(Value value, string function) =>
+        RequireMatrix(value, function).AsVector(function);
+
     public static double RequireNumber(Value value, string function)
     {
         if (value is not NumberValue n)

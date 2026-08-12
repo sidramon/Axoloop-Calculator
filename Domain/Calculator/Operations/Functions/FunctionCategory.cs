@@ -6,5 +6,6 @@ public enum FunctionCategory
     Trigonometry,
     Matrix,
     Eigen,
-    Logic
+    Logic,
+    Statistics
 }

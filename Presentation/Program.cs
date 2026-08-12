@@ -9,6 +9,7 @@ using Domain.Calculator.Operations.Functions;
 using Domain.Calculator.Operations.Functions.Complex;
 using Domain.Calculator.Operations.Functions.Matrix;
 using Domain.Calculator.Operations.Functions.Matrix.Eigen;
+using Domain.Calculator.Operations.Functions.Probability;
 using Domain.Calculator.Operations.Functions.Scalar;
 using Domain.Calculator.Operations.Functions.Scalar.Trigonometric;
 using Domain.Calculator.Operations.SpecialForms;
@@ -90,6 +91,31 @@ var functions = new IFunction[]
     new ImaginaryPartFunction(),
     new ConjugateFunction(),
     new ArgumentFunction(),
+    new MeanFunction(),
+    new MedianFunction(),
+    new ModeFunction(),
+    new VarianceFunction(),
+    new VarianceFunction(hasPopulationArgument: true),
+    new StdDevFunction(),
+    new StdDevFunction(hasPopulationArgument: true),
+    new RangeFunction(),
+    new SumFunction(),
+    new ProductFunction(),
+    new MinFunction(),
+    new MaxFunction(),
+    new ChooseFunction(),
+    new PermutationsFunction(),
+    new ErfFunction(),
+    new ErfcFunction(),
+    new GammaFunction(),
+    new LogGammaFunction(),
+    new NormalPdfFunction(),
+    new NormalCdfFunction(),
+    new NormalInverseCdfFunction(),
+    new BinomialPdfFunction(),
+    new BinomialCdfFunction(),
+    new PoissonPdfFunction(),
+    new PoissonCdfFunction(),
 };
 
 var functionContext = new FunctionContext();

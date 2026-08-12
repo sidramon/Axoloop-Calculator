@@ -113,6 +113,18 @@ zoom, pan, point inspection, and detected zeros and local extrema. `/plot`,
 just a defined name — `/plotweb ndiff(f) -10 10` plots a derivative directly.
 `plot(f, xMin, xMax)` returns raw samples as a matrix instead of rendering.
 
+**Statistics and probability** — descriptive stats (`mean`, `median`, `mode`,
+`variance`, `std`, `range`, `sum`, `product`, `min`, `max`) over a vector;
+`variance`/`std` default to the sample convention (n−1) and take an optional
+second argument for the population convention (n) instead. Combinatorics
+(`choose`, `perm`) via a multiplicative formula that avoids forming a factorial
+directly, so `choose(100, 50)` doesn't overflow the way `100!` would — precision
+degrades gracefully instead, staying exact through roughly n = 50. The special
+functions `erf`/`erfc` (Abramowitz & Stegun, ~1e-7) and `gamma`/`lgamma`
+(Lanczos, ~1e-15) back three distributions: normal (`normpdf`, `normcdf`,
+`norminv` by bisection), binomial (`binompdf`, `binomcdf`), and Poisson
+(`poisspdf`, `poisscdf`).
+
 **Built-in documentation** — every function carries its own signature, description
 and examples; `/help <name>`, `/functions` and a generated web reference all come
 from that single source.

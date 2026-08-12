@@ -134,7 +134,7 @@ public sealed record MatrixValue : Value
         return Math.Sqrt(sumSquares);
     }
 
-    private double[] AsVector(string operation)
+    internal double[] AsVector(string operation)
     {
         if (Rows != 1 && Columns != 1)
             throw new InvalidOperationException(
