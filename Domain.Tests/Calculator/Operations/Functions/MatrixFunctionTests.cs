@@ -168,6 +168,44 @@ public class MatrixFunctionTests
     }
 
     [Fact]
+    public void Norm_RowVector_ReturnsEuclideanLength()
+    {
+        var v = M(new double[,] { { 3, 4 } });
+
+        var result = (NumberValue)new NormFunction().Apply(new Value[] { v });
+
+        result.Number.Should().BeApproximately(5, 1e-10);
+    }
+
+    [Fact]
+    public void Norm_ColumnVector_ReturnsEuclideanLength()
+    {
+        var v = M(new double[,] { { 1 }, { 1 }, { 1 }, { 1 } });
+
+        var result = (NumberValue)new NormFunction().Apply(new Value[] { v });
+
+        result.Number.Should().BeApproximately(2, 1e-10);
+    }
+
+    [Fact]
+    public void Norm_NonVectorMatrix_Throws()
+    {
+        var m = M(new double[,] { { 1, 2 }, { 3, 4 } });
+
+        var act = () => new NormFunction().Apply(new Value[] { m });
+
+        act.Should().Throw<InvalidOperationException>();
+    }
+
+    [Fact]
+    public void Norm_NonMatrixArgument_Throws()
+    {
+        var act = () => new NormFunction().Apply(new Value[] { new NumberValue(1) });
+
+        act.Should().Throw<InvalidOperationException>();
+    }
+
+    [Fact]
     public void Zeros_GivenDimensions_ReturnsMatrixOfZeros()
     {
         var result = (MatrixValue)new ZerosFunction().Apply(new Value[] { new NumberValue(2), new NumberValue(3) });

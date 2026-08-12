@@ -126,6 +126,14 @@ public sealed record MatrixValue : Value
         return new MatrixValue(row);
     }
 
+    public double Norm()
+    {
+        var v = AsVector("norm");
+        double sumSquares = 0;
+        for (var i = 0; i < v.Length; i++) sumSquares += v[i] * v[i];
+        return Math.Sqrt(sumSquares);
+    }
+
     private double[] AsVector(string operation)
     {
         if (Rows != 1 && Columns != 1)

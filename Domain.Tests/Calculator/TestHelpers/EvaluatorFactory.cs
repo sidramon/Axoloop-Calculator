@@ -47,6 +47,7 @@ public static class EvaluatorFactory
         new IdentityFunction(),
         new DotProductFunction(),
         new CrossProductFunction(),
+        new NormFunction(),
         new ZerosFunction(),
         new OnesFunction(),
         new ReshapeFunction(),

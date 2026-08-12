@@ -77,7 +77,8 @@ immediately — `ndiff(y)(3)` chains a second call directly onto the result of
 the first.
 
 **Linear algebra** — determinant, inverse, rank, trace, transpose, dot and cross
-products, eigenvalues and eigenvectors, reshape, identity and fill constructors.
+products, vector norm, eigenvalues and eigenvectors, reshape, identity and fill
+constructors.
 
 **Equation and linear-system solving** — `solve(equation, unknown)` numerically
 finds the real roots of an equation written as-is (`solve(x^2 = 4, x)`), with an
