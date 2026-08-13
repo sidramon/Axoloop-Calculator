@@ -125,6 +125,20 @@ functions `erf`/`erfc` (Abramowitz & Stegun, ~1e-7) and `gamma`/`lgamma`
 `norminv` by bisection), binomial (`binompdf`, `binomcdf`), and Poisson
 (`poisspdf`, `poisscdf`).
 
+**Random numbers** — `rand()`/`rand(n)` (uniform), `randint(min, max)`
+(integer, inclusive both ends), `randnorm(mu, sigma)` (Box-Muller), `randbin(n, p)`
+(binomial trial count), and `randsamp(v, k)` (without replacement by default,
+matching TI calculators; `randsamp(v, k, 1)` samples with replacement instead).
+`seed(k)` reseeds the shared random source, making every draw after it
+reproducible — it's the only function whose entire purpose is a side effect,
+returning `k` itself for consistency with the rest of the language rather than
+inventing a "nothing useful" result. Every random function draws through the
+same injected `IRandomSource` instance (`SystemRandomSource` by default), so
+`seed` affects all of them at once; this is also what makes the random layer
+testable at all — tests inject a scripted source instead of depending on real
+randomness. Composes with the statistics functions above for basic sanity
+checks: `mean(rand(10000))` ≈ 0.5, `std(randnorm(0, 1, 10000), 1)` ≈ 1.
+
 **Built-in documentation** — every function carries its own signature, description
 and examples; `/help <name>`, `/functions` and a generated web reference all come
 from that single source.

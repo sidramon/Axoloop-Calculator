@@ -7,5 +7,6 @@ public enum FunctionCategory
     Matrix,
     Eigen,
     Logic,
-    Statistics
+    Statistics,
+    Random
 }
