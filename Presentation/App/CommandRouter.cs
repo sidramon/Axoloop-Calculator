@@ -340,6 +340,14 @@ public sealed class CommandRouter
                 if (hint is not null)
                     AnsiConsole.MarkupLine($"[grey]{Markup.Escape(hint)}[/]");
             }
+            else if (result is LimitValue limit)
+            {
+                AnsiConsole.MarkupLine($"[green]{Markup.Escape(_formatter.Format(limit))}[/]");
+                if (limit.Kind == LimitKind.NoLimit)
+                    AnsiConsole.MarkupLine("[grey]Oscillation detection is approximate: a function with " +
+                        "genuinely no limit and one that merely converges very slowly can look identical " +
+                        "from finitely many samples.[/]");
+            }
             else
             {
                 AnsiConsole.MarkupLine($"[green]{Markup.Escape(_formatter.Format(result))}[/]");
