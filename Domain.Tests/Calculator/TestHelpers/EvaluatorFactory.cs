@@ -6,9 +6,11 @@ using Domain.Calculator.Operations.Functions.Complex;
 using Domain.Calculator.Operations.Functions.Matrix;
 using Domain.Calculator.Operations.Functions.Matrix.Eigen;
 using Domain.Calculator.Operations.Functions.Probability;
+using Domain.Calculator.Operations.Functions.Random;
 using Domain.Calculator.Operations.Functions.Scalar;
 using Domain.Calculator.Operations.Functions.Scalar.Trigonometric;
 using Domain.Calculator.Operations.SpecialForms;
+using Domain.Calculator.Random;
 
 // Kept intentionally in sync with the `functions` array wired up in Presentation/Program.cs —
 // the documentation completeness guard only ever inspects the builtins listed here.
@@ -18,9 +20,20 @@ public static class EvaluatorFactory
     public static Evaluator CreateDefault() => CreateDefault(new FunctionContext());
 
     public static Evaluator CreateDefault(FunctionContext functionContext) =>
-        new(Builtins(), SpecialForms(functionContext), functionContext);
+        CreateDefault(functionContext, new SystemRandomSource());
 
-    public static IReadOnlyList<IFunction> Builtins() => new IFunction[]
+    /// <summary>
+    /// Same as <see cref="CreateDefault(FunctionContext)"/>, but with a caller-supplied
+    /// <see cref="IRandomSource"/> — e.g. a <c>ScriptedRandomSource</c> — wired into every
+    /// random-number builtin instead of a fresh <see cref="SystemRandomSource"/>, for
+    /// tests that need to control or observe what the random functions draw.
+    /// </summary>
+    public static Evaluator CreateDefault(FunctionContext functionContext, IRandomSource randomSource) =>
+        new(Builtins(randomSource), SpecialForms(functionContext), functionContext);
+
+    public static IReadOnlyList<IFunction> Builtins() => Builtins(new SystemRandomSource());
+
+    public static IReadOnlyList<IFunction> Builtins(IRandomSource randomSource) => new IFunction[]
     {
         new SqrtFunction(),
         new NthRootFunction(),
@@ -96,6 +109,16 @@ public static class EvaluatorFactory
         new BinomialCdfFunction(),
         new PoissonPdfFunction(),
         new PoissonCdfFunction(),
+        new RandFunction(randomSource),
+        new RandFunction(randomSource, hasCount: true),
+        new RandIntFunction(randomSource),
+        new RandIntFunction(randomSource, hasCount: true),
+        new RandNormFunction(randomSource),
+        new RandNormFunction(randomSource, hasCount: true),
+        new RandBinFunction(randomSource),
+        new RandSampFunction(randomSource),
+        new RandSampFunction(randomSource, hasReplacementArgument: true),
+        new SeedFunction(randomSource),
     };
 
     public static IReadOnlyList<ISpecialForm> SpecialForms(FunctionContext? functionContext = null)

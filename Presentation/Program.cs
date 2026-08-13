@@ -10,10 +10,12 @@ using Domain.Calculator.Operations.Functions.Complex;
 using Domain.Calculator.Operations.Functions.Matrix;
 using Domain.Calculator.Operations.Functions.Matrix.Eigen;
 using Domain.Calculator.Operations.Functions.Probability;
+using Domain.Calculator.Operations.Functions.Random;
 using Domain.Calculator.Operations.Functions.Scalar;
 using Domain.Calculator.Operations.Functions.Scalar.Trigonometric;
 using Domain.Calculator.Operations.SpecialForms;
 using Domain.Calculator.Parsing;
+using Domain.Calculator.Random;
 using Infrastructure.Documentation;
 using Infrastructure.Plotting;
 using Infrastructure.Views;
@@ -39,6 +41,11 @@ var unaryOperators = new IUnaryOperator[]
 {
     new FactorialOperator(),
 };
+
+// Registered once and shared by every random-number function below, so seed(k) affects
+// all of them -- see IRandomSource's doc comment for why a per-function `new Random()`
+// would defeat that.
+var randomSource = new SystemRandomSource();
 
 var functions = new IFunction[]
 {
@@ -116,6 +123,16 @@ var functions = new IFunction[]
     new BinomialCdfFunction(),
     new PoissonPdfFunction(),
     new PoissonCdfFunction(),
+    new RandFunction(randomSource),
+    new RandFunction(randomSource, hasCount: true),
+    new RandIntFunction(randomSource),
+    new RandIntFunction(randomSource, hasCount: true),
+    new RandNormFunction(randomSource),
+    new RandNormFunction(randomSource, hasCount: true),
+    new RandBinFunction(randomSource),
+    new RandSampFunction(randomSource),
+    new RandSampFunction(randomSource, hasReplacementArgument: true),
+    new SeedFunction(randomSource),
 };
 
 var functionContext = new FunctionContext();

@@ -147,6 +147,14 @@ public sealed record MatrixValue : Value
         return vector;
     }
     
+    /// <summary>A 1xN row-vector matrix wrapping <paramref name="values"/> — the standard container for any function returning a list of numbers.</summary>
+    public static MatrixValue FromRow(IReadOnlyList<double> values)
+    {
+        var data = new double[1, values.Count];
+        for (var i = 0; i < values.Count; i++) data[0, i] = values[i];
+        return new MatrixValue(data);
+    }
+
     public static MatrixValue Filled(int rows, int columns, double value)
     {
         if (rows < 1 || columns < 1)
