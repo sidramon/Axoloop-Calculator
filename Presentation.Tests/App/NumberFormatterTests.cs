@@ -238,4 +238,102 @@ public class NumberFormatterTests
 
         formatter.Format(list).Should().Be("[i, -i]");
     }
+
+    // ---- Limit formatting ----
+
+    [Fact]
+    public void Format_LimitConverges_RendersVariableArrowTargetColonValue()
+    {
+        var formatter = new NumberFormatter(FormatOptions.Default);
+        var limit = new Domain.Calculator.Values.LimitValue(
+            "x", 0, null, Domain.Calculator.Algorithms.LimitKind.Converges, 1, 1, 1);
+
+        formatter.Format(limit).Should().Be("x → 0 : 1");
+    }
+
+    [Fact]
+    public void Format_LimitDiverges_RendersPlusInfinity()
+    {
+        var formatter = new NumberFormatter(FormatOptions.Default);
+        var limit = new Domain.Calculator.Values.LimitValue(
+            "x", 0, null, Domain.Calculator.Algorithms.LimitKind.DivergesToPositiveInfinity,
+            double.PositiveInfinity, double.PositiveInfinity, double.PositiveInfinity);
+
+        formatter.Format(limit).Should().Be("x → 0 : +∞");
+    }
+
+    [Fact]
+    public void Format_LimitDivergesNegative_RendersMinusInfinity()
+    {
+        var formatter = new NumberFormatter(FormatOptions.Default);
+        var limit = new Domain.Calculator.Values.LimitValue(
+            "x", 0, null, Domain.Calculator.Algorithms.LimitKind.DivergesToNegativeInfinity,
+            double.NegativeInfinity, double.NegativeInfinity, double.NegativeInfinity);
+
+        formatter.Format(limit).Should().Be("x → 0 : -∞");
+    }
+
+    [Fact]
+    public void Format_LimitOneSidedDiffer_ShowsBothSidesAndSaysTwoSidedLimitDoesNotExist()
+    {
+        var formatter = new NumberFormatter(FormatOptions.Default);
+        var limit = new Domain.Calculator.Values.LimitValue(
+            "x", 0, null, Domain.Calculator.Algorithms.LimitKind.OneSidedDiffer,
+            null, double.NegativeInfinity, double.PositiveInfinity);
+
+        formatter.Format(limit).Should().Be(
+            "x → 0⁻ : -∞, x → 0⁺ : +∞ (two-sided limit does not exist)");
+    }
+
+    [Fact]
+    public void Format_LimitNoLimit_RendersOscillatesMessageNotAValue()
+    {
+        var formatter = new NumberFormatter(FormatOptions.Default);
+        var limit = new Domain.Calculator.Values.LimitValue(
+            "x", 0, null, Domain.Calculator.Algorithms.LimitKind.NoLimit, null, null, null);
+
+        formatter.Format(limit).Should().Be("x → 0 : no limit (oscillates)");
+    }
+
+    [Fact]
+    public void Format_LimitOneSidedRequestFromTheRight_RendersRightArrowOnly()
+    {
+        var formatter = new NumberFormatter(FormatOptions.Default);
+        var limit = new Domain.Calculator.Values.LimitValue(
+            "x", 0, 1, Domain.Calculator.Algorithms.LimitKind.DivergesToPositiveInfinity,
+            double.PositiveInfinity, null, null);
+
+        formatter.Format(limit).Should().Be("x → 0⁺ : +∞");
+    }
+
+    [Fact]
+    public void Format_LimitOneSidedRequestFromTheLeft_RendersLeftArrowOnly()
+    {
+        var formatter = new NumberFormatter(FormatOptions.Default);
+        var limit = new Domain.Calculator.Values.LimitValue(
+            "x", 0, -1, Domain.Calculator.Algorithms.LimitKind.DivergesToNegativeInfinity,
+            double.NegativeInfinity, null, null);
+
+        formatter.Format(limit).Should().Be("x → 0⁻ : -∞");
+    }
+
+    [Fact]
+    public void Format_LimitAtPositiveInfinityTarget_RendersInfinitySymbolNotInfinityWord()
+    {
+        var formatter = new NumberFormatter(FormatOptions.Default);
+        var limit = new Domain.Calculator.Values.LimitValue(
+            "x", double.PositiveInfinity, null, Domain.Calculator.Algorithms.LimitKind.Converges, 0, 0, 0);
+
+        formatter.Format(limit).Should().Be("x → ∞ : 0");
+    }
+
+    [Fact]
+    public void Format_LimitAtNegativeInfinityTarget_RendersNegativeInfinitySymbol()
+    {
+        var formatter = new NumberFormatter(FormatOptions.Default);
+        var limit = new Domain.Calculator.Values.LimitValue(
+            "x", double.NegativeInfinity, null, Domain.Calculator.Algorithms.LimitKind.Converges, 0, 0, 0);
+
+        formatter.Format(limit).Should().Be("x → -∞ : 0");
+    }
 }

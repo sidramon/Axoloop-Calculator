@@ -144,6 +144,8 @@ var specialForms = new ISpecialForm[]
     new SolveForm(hasExplicitDomain: true),
     new DiffForm(functionContext),
     new DiffForm(functionContext, hasExplicitOrder: true),
+    new LimForm(),
+    new LimForm(hasExplicitDirection: true),
 };
 
 var postfixOperators = new IUnaryOperator[]

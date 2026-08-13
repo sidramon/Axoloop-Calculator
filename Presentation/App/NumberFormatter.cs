@@ -1,6 +1,7 @@
 namespace Presentation.App;
 
 using System.Globalization;
+using Domain.Calculator.Algorithms;
 using Domain.Calculator.Symbolic;
 using Domain.Calculator.Values;
 
@@ -25,8 +26,51 @@ public sealed class NumberFormatter
         SolutionValue s => FormatSolutionInline(s),
         SymbolicValue s => SymbolicPrinter.Print(s.Expression),
         ValueListValue l => $"[{string.Join(", ", l.Values.Select(Format))}]",
+        LimitValue lim => FormatLimit(lim),
         _ => value.ToString() ?? ""
     };
+
+    /// <summary>
+    /// A one-sided lim(..., direction) result (Direction != null) shows only the
+    /// requested side. A two-sided result shows both sides only when they genuinely
+    /// disagree (OneSidedDiffer) — every other outcome (converge, diverge, no limit) is
+    /// one value for both sides, so it's shown once.
+    /// </summary>
+    private string FormatLimit(LimitValue limit)
+    {
+        var targetText = double.IsPositiveInfinity(limit.Target) ? "∞"
+            : double.IsNegativeInfinity(limit.Target) ? "-∞"
+            : FormatNumber(limit.Target);
+
+        if (limit.Direction is { } direction)
+        {
+            var arrow = $"{limit.Variable} → {targetText}{(direction < 0 ? "⁻" : "⁺")}";
+            return $"{arrow} : {FormatLimitOutcome(limit.Kind, limit.Value)}";
+        }
+
+        if (limit.Kind == LimitKind.OneSidedDiffer)
+            return $"{limit.Variable} → {targetText}⁻ : {FormatSignedInfinityOrNumber(limit.LeftValue)}, " +
+                   $"{limit.Variable} → {targetText}⁺ : {FormatSignedInfinityOrNumber(limit.RightValue)} " +
+                   "(two-sided limit does not exist)";
+
+        return $"{limit.Variable} → {targetText} : {FormatLimitOutcome(limit.Kind, limit.Value)}";
+    }
+
+    private string FormatLimitOutcome(LimitKind kind, double? value) => kind switch
+    {
+        LimitKind.Converges => FormatNumber(value!.Value),
+        LimitKind.DivergesToPositiveInfinity => "+∞",
+        LimitKind.DivergesToNegativeInfinity => "-∞",
+        _ => "no limit (oscillates)"
+    };
+
+    private string FormatSignedInfinityOrNumber(double? value)
+    {
+        if (value is null) return "no limit";
+        if (double.IsPositiveInfinity(value.Value)) return "+∞";
+        if (double.IsNegativeInfinity(value.Value)) return "-∞";
+        return FormatNumber(value.Value);
+    }
 
     /// <summary>
     /// Each component is rendered through <see cref="FormatNumber"/> first, so snap-to-zero

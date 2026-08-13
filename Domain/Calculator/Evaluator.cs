@@ -159,6 +159,7 @@ public sealed class Evaluator
         BooleanValue  => "boolean",
         MatrixValue   => "matrix",
         SolutionValue => "solution",
+        LimitValue    => "limit",
         _ => "value"
     };
 

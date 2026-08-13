@@ -87,6 +87,7 @@ internal static class ValueArithmetic
         SolutionValue  => "solution",
         SymbolicValue  => "symbolic",
         ComplexValue   => "complex",
+        LimitValue     => "limit",
         _ => "value"
     };
 }

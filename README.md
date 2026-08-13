@@ -107,6 +107,20 @@ for a definite integral by Simpson's rule. `ndiff(f)`, `integral(f)` and
 `integral(f, a)` return a derivative or antiderivative as a callable function
 rather than a single value, so it can be composed or plotted directly.
 
+**Limits** — `lim(expr, x, target)` numerically estimates a two-sided limit, written
+naturally (`lim(sin(x)/x, x, 0)`), by sampling expr at a shrinking sequence of points
+near target and extrapolating with Richardson extrapolation rather than trusting the
+smallest raw sample — the descent deliberately stops at a floor (1e-6) well short of
+where catastrophic cancellation would corrupt the result, the same hazard `ndiff`
+sidesteps for derivatives. Reports one of four outcomes explicitly rather than ever
+guessing: convergence, divergence to `+∞`/`-∞`, the left and right sides converging to
+different values (`lim(1/x, x, 0)` — the two-sided limit doesn't exist even though each
+side is individually well-behaved), or no coherent limit at all (`lim(sin(1/x), x, 0)`,
+oscillation). `target` accepts `_inf`/`-_inf` for a limit at infinity. `x` shadows any
+variable of the same name only for the call's duration — a global `a` stays visible and
+unconfused (`a := 2 :: lim(a*x, x, 3)` → 6). `lim(expr, x, target, direction)` restricts
+to one side (`direction` negative = from below, positive = from above).
+
 **Plotting** — ASCII rendering in the terminal, or an interactive HTML view with
 zoom, pan, point inspection, and detected zeros and local extrema. `/plot`,
 `/plotweb`, `/zeros` and `/extrema` accept any function-valued expression, not
@@ -230,7 +244,14 @@ function that goes complex partway across a plotted or solved domain (e.g.
 one that throws there: that part of the domain is silently skipped rather than
 plotted or searched, which can read as "no root found" when the real reason is
 "the expression isn't real-valued there." The web plot zooms over pre-computed
-samples, so it cannot resolve detail past the sampled domain.
+samples, so it cannot resolve detail past the sampled domain. `lim` is purely
+numeric — no symbolic form, no L'Hopital's rule — and its classification into
+converge/diverge/one-sided-differ/no-limit is a judgment call from finitely
+many samples, not a proof: a limit that converges extremely slowly can be
+misread as no limit, and a high-frequency oscillation with a long enough
+"quiet" stretch near the sampled offsets can occasionally be misread as
+convergence. Both failure modes get rarer with a well-behaved expression and
+are why the REPL adds an explicit caveat whenever it reports no limit.
 
 ## Contributing
 

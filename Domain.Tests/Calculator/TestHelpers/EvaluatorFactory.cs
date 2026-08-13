@@ -131,6 +131,8 @@ public static class EvaluatorFactory
             new SolveForm(hasExplicitDomain: true),
             new DiffForm(functions),
             new DiffForm(functions, hasExplicitOrder: true),
+            new LimForm(),
+            new LimForm(hasExplicitDirection: true),
         };
     }
 }
